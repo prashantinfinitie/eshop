@@ -1,0 +1,9 @@
+uploads/*
+vendor/*
+application/logs/*
+assets/front_end/modern/demo/*
+assets/front_end/modern/images/*
+.DS_Store
+/.vscode/
+/dist/
+/node_modules/
