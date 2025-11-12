@@ -26,6 +26,7 @@ class Area_model extends CI_Model
             'city_id' => $data['city'],
             'minimum_free_delivery_order_amount' => $data['minimum_free_delivery_order_amount'],
             'delivery_charges' => $data['delivery_charges'],
+            'provider_type' => isset($data['provider_type']) && in_array($data['provider_type'], ['company', 'delivery_boy']) ? $data['provider_type'] : 'delivery_boy'
         ];
         if (isset($data['edit_zipcode']) && !empty($data['edit_zipcode'])) {
             $this->db->set($zipcode_data)->where('id', $data['edit_zipcode'])->update('zipcodes');
@@ -289,7 +290,7 @@ class Area_model extends CI_Model
             'error'   => empty($cat_search_res),
             'message' => empty($cat_search_res) ? 'No serviceable pincodes found' : 'Pincodes retrieved successfully',
             'total'   => $total,
-            
+
             'data'    => []
         ];
 

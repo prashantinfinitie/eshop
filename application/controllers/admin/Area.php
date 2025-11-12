@@ -379,6 +379,9 @@ class Area extends CI_Controller
             $this->form_validation->set_rules('minimum_free_delivery_order_amount', ' Minimum Free Delivery Amount ', 'trim|required|numeric|xss_clean');
             $this->form_validation->set_rules('delivery_charges', ' Delivery Charges ', 'trim|required|numeric|xss_clean');
 
+            //New: provider type rule
+            $this->form_validation->set_rules('provider_type', 'Deliver provider type', 'trim|required|in_list[company,delivery_boy]|xss_clean');
+
             $shipping_settings = get_settings('shipping_method', true);
 
             if (isset($shipping_settings['pincode_wise_deliverability']) && $shipping_settings['pincode_wise_deliverability'] == 1) {
@@ -446,12 +449,20 @@ class Area extends CI_Controller
                     'city',
                     'minimum_free_delivery_order_amount',
                     'delivery_charges',
-                    'edit_zipcode'
+                    'edit_zipcode',
+                    'provider_type'
                 ];
 
                 foreach ($fields as $field) {
                     $zipcode_data[$field] = $this->input->post($field, true) ?? "";
                 }
+
+                // Enforce default if missing
+
+                if (empty($zipcode_data['provider_type'])) {
+                    $zipcode_data['provider_type'] = 'company';
+                }
+
                 $this->Area_model->add_zipcode($zipcode_data);
                 $this->response['error'] = false;
                 $this->response['csrfName'] = $this->security->get_csrf_token_name();

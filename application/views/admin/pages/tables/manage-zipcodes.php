@@ -36,11 +36,11 @@
                                 <div class="row">
                                     <div class="form-group col-md-4">
                                         <label for="city_name">Zipcode <span class='text-danger text-sm'>*</span>
-                                            <?php 
+                                            <?php
                                             if (isset($shipping_method['city_wise_deliverability']) && $shipping_method['city_wise_deliverability'] == '1') { ?>
                                                 <span class="text-info" title="You can enable Pincode wise deliverability from System -> store settings -> prodct deliverability ">(?)</span>
                                             <?php } ?>
-                                            </label>
+                                        </label>
 
                                     </div>
                                     <div class="form-group col-md-8">
@@ -77,6 +77,31 @@
                                         <input type="number" class="form-control" name="delivery_charges" id="delivery_charges" min="0" value="<?= (isset($fetched_data[0]['delivery_charges']) ? $fetched_data[0]['delivery_charges'] : '') ?>">
                                     </div>
                                 </div>
+
+
+                                <!-- Provider Type: Shipping Company or Delivery Boy -->
+                                <div class="row">
+                                    <div class="form-group col-md-4">
+                                        <label for="provider_type" class="control-label">Delivery Provider Type <span class='text-danger text-xs'>*</span></label>
+                                    </div>
+                                    <div class="form-group col-md-8">
+                                        <?php
+                                        $selected_provider_type = isset($fetched_data[0]['provider_type']) ? $fetched_data[0]['provider_type'] : 'company';
+                                        ?>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="provider_type" id="provider_type_company" value="company" <?= ($selected_provider_type == 'company') ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="provider_type_company">Shipping Company / Courier</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="provider_type" id="provider_type_delivery_boy" value="delivery_boy" <?= ($selected_provider_type == 'delivery_boy') ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="provider_type_delivery_boy">Delivery Boy (Local)</label>
+                                        </div>
+                                        <p class="help-block text-muted">Choose whether this zipcode uses shipping-company quotes or direct delivery boys.</p>
+                                    </div>
+                                </div>
+
+
+
                                 <div class="row">
                                     <div class="form-group">
                                         <button type="reset" class="btn btn-warning">Reset</button>
@@ -117,10 +142,10 @@
                             </div>
                             <div class="gaps-1-5x"></div>
                             <div id="zipcodeToolbar">
-                                        <button id="zipcode_remove" class="btn btn-danger">
-                                            <i class="fa fa-trash mr-2"></i> Delete
-                                        </button>
-                                    </div>
+                                <button id="zipcode_remove" class="btn btn-danger">
+                                    <i class="fa fa-trash mr-2"></i> Delete
+                                </button>
+                            </div>
                             <table class='table-striped' data-toolbar="#zipcodeToolbar" id='zipcode-table' data-toggle="table" data-url="<?= base_url('admin/area/view_zipcodes') ?>" data-click-to-select="true" data-side-pagination="server" data-pagination="true" data-page-list="[5, 10, 20, 50, 100, 200]" data-search="true" data-single-select='false' data-show-columns="true" data-show-refresh="true" data-trim-on-search="false" data-sort-name="id" data-sort-order="desc" data-mobile-responsive="true" data-toolbar="zipcodeToolbar" data-show-export="true" data-maintain-selected="true" data-export-types='["txt","excel"]' data-query-params="queryParams">
 
                                 <thead>

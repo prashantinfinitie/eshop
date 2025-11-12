@@ -50,5 +50,6 @@ class Migration_Add_affiliate_token_column extends CI_Migration
         $this->dbforge->drop_column('order_items', 'affiliate_token');
         $this->dbforge->drop_column('order_items', 'affiliate_commission');
         $this->dbforge->drop_column('order_items', 'is_affiliate_commission_settled');
+        $this->dbforge->drop_column('order_items', 'affiliate_commission_amount');
     }
 }
