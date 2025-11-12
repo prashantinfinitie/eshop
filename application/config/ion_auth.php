@@ -136,6 +136,7 @@ $config['default_group']              = 'members';           // Default group, u
 $config['admin_group']                = 'admin';             // Default administrators group, use name
 $config['delivery_boy_group']         = 'delivery_boy';      // Default administrators group, use name
 $config['seller_group']               = 'seller';            // Default administrators group, use name
+$config['shipping_company_group']     = 'shipping_company';
 $config['identity']                   = 'mobile';             /* You can use any unique column in your table as identity column.
 															    The values in this column, alongside password, will be used for login purposes
 															    IMPORTANT: If you are changing it from the default (email),

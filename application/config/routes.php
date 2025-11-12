@@ -71,4 +71,9 @@ $route['default_controller'] = 'home';
 $route['404_override'] = 'error_404';
 $route['sitemap.xml'] = 'sitemap/index';
 
+// Add routes for Shipping Companies
+$route['admin/shipping-companies'] = 'admin/Shipping_companies';
+$route['admin/shipping-companies/(:any)'] = 'admin/Shipping_companies/$1';
+$route['admin/shipping-companies/(:any)/(:any)'] = 'admin/Shipping_companies/$1/$2';
+
 $route['translate_uri_dashes'] = TRUE;

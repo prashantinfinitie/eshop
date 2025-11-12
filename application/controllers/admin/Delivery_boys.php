@@ -20,25 +20,38 @@ class Delivery_boys extends CI_Controller
 
     public function index()
     {
-        if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
-            $this->data['main_page'] = FORMS . 'delivery-boy';
-            $settings = get_settings('system_settings', true);
-            $this->data['title'] = 'Add Delivery Boy | ' . $settings['app_name'];
-            $this->data['meta_description'] = 'Add Delivery Boy  | ' . $settings['app_name'];
-            if (isset($_GET['edit_id']) && !empty($_GET['edit_id'])) {
-                $this->data['fetched_data'] = $this->db->select(' u.* ')
-                    ->join('users_groups ug', ' ug.user_id = u.id ')
-                    ->where(['ug.group_id' => '3', 'ug.user_id' => $_GET['edit_id']])
-                    ->get('users u')
-                    ->result_array();
-            }
-            $this->data['shipping_method'] = get_settings('shipping_method', true);
-            $this->data['system_settings'] = get_settings('system_settings', true);
-            $this->data['cities'] = fetch_details('cities', "", 'name,id');
 
-            $this->load->view('admin/template', $this->data);
-        } else {
-            redirect('admin/login', 'refresh');
+        try {
+            if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
+
+                // index.php (root of project)
+                define('ENVIRONMENT', 'development');
+                error_reporting(E_ALL);
+                ini_set('display_errors', 1);
+                $this->data['main_page'] = FORMS . 'delivery-boy';
+                $settings = get_settings('system_settings', true);
+                $this->data['title'] = 'Add Delivery Boy | ' . $settings['app_name'];
+                $this->data['meta_description'] = 'Add Delivery Boy  | ' . $settings['app_name'];
+                if (isset($_GET['edit_id']) && !empty($_GET['edit_id'])) {
+                    $this->data['fetched_data'] = $this->db->select(' u.* ')
+                        ->join('users_groups ug', ' ug.user_id = u.id ')
+                        ->where(['ug.group_id' => '3', 'ug.user_id' => $_GET['edit_id']])
+                        ->get('users u')
+                        ->result_array();
+                }
+                $this->data['shipping_method'] = get_settings('shipping_method', true);
+                $this->data['system_settings'] = get_settings('system_settings', true);
+                $this->data['cities'] = fetch_details('cities', "", 'name,id');
+
+                $this->load->view('admin/template', $this->data);
+            } else {
+                redirect('admin/login', 'refresh');
+            }
+        } catch (Throwable $e) {   // works for both Exception + Error in PHP7+
+            log_message('error', 'Shipping_companies::index() failed - ' . $e->getMessage());
+            // Optional: show readable message on screen while keeping log entry
+            echo "<pre style='color:red;'>PHP Exception: " . htmlspecialchars($e->getMessage()) .
+                "\nFile: " . $e->getFile() . ':' . $e->getLine() . "</pre>";
         }
     }
 
@@ -91,7 +104,7 @@ class Delivery_boys extends CI_Controller
             $dboy_id = $this->input->get('id', true);
             $order_items = fetch_details('order_items', ['delivery_boy_id' => $dboy_id]);
 
-            //check all the assign order item status which is not delivered yet 
+            //check all the assign order item status which is not delivered yet
             foreach ($order_items as $order_item) {
                 $order_item_status  = $order_item['active_status'];
                 if ($order_item_status != 'delivered' || $order_item_status != 'returned' || $order_item_status != 'cancelled') {

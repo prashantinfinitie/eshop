@@ -117,6 +117,7 @@ define('TICKET_IMG_PATH', 'uploads/tickets/');
 define('DIRECT_BANK_TRANSFER_IMG_PATH', 'uploads/bank_transfer/');
 define('SELLER_DOCUMENTS_PATH', 'uploads/seller/');
 define('DELIVERY_BOY_DOCUMENTS_PATH', 'uploads/delivery_boy/');
+define('SHIPPING_COMPANY_DOCUMENTS_PATH', 'uploads/shipping_company/'); // relative to FCPATH
 define('ORDER_ATTACHMENTS', 'uploads/order_attachments/');
 define('RETURN_IMAGES', 'uploads/return_images/');
 define('APP_CODE', '34108271');
@@ -130,7 +131,7 @@ define('CROPPED_SM', 'cropped-sm/');
 
 define('PERMISSION_ERROR_MSG', ' You are not authorize to operate on the module ');
 
-// ticket status 
+// ticket status
 define('PENDING', '1');
 define('OPENED', '2');
 define('RESOLVED', '3');

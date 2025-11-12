@@ -156,6 +156,7 @@
                                         <th data-field="city_name" data-sortable="false">City Name</th>
                                         <th data-field="minimum_free_delivery_order_amount" data-sortable="false">Minimum Free Delivery Order Amount</th>
                                         <th data-field="delivery_charges" data-sortable="false">Delivery Charges</th>
+                                        <th data-field="provider_type" data-sortable="false">Provider Type</th>
                                         <th data-field="operate" data-sortable="false">Actions</th>
                                     </tr>
                                 </thead>

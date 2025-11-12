@@ -572,7 +572,8 @@ $config['system_modules'] = [
     'area' => array('create', 'read', 'update', 'delete'),
     'city' => array('create', 'read', 'update', 'delete'),
     'faq' => array('create', 'read', 'update', 'delete'),
-    'chat' => array('create', 'read', 'delete')
+    'chat' => array('create', 'read', 'delete'),
+    'shipping_company' => array('create', 'read', 'update', 'delete'),
 ];
 
 /*

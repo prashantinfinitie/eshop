@@ -13,16 +13,16 @@ Common-Functions or events
  8.Slider-Module
  9.Offer-Module
  10.Promo_code-Module
- 11.Delivery_boys-Module 
- 12.Settings-Module 
+ 11.Delivery_boys-Module
+ 12.Settings-Module
  13.City-Module
  14.Transaction_Module
- 15.Customer-Wallet-Module   
+ 15.Customer-Wallet-Module
  16.Fund-Transfer-Module
  17.Return-Request-Module
  18.Tax-Module
- 19.Image Upload 
- 20.Client Api Key Module  
+ 19.Image Upload
+ 20.Client Api Key Module
  21.System Users
  22.custom-notification-Module
  23. whatsapp status
@@ -1723,10 +1723,14 @@ $(document).on('click', '.update_sms_data', function () {
 
 
 $(document).on('click', '.edit_btn', function () {
+
     var id = $(this).data('id');
     var url = $(this).data('url');
 
+    console.log(url, id);
     $('.edit-modal-lg').modal('show').find('.modal-body').load(base_url + url + '?edit_id=' + id + ' .form-submit-event', function () {
+
+
 
         if ($("input[data-bootstrap-switch]").length) {
 
@@ -2138,6 +2142,24 @@ $(document).on('submit', '.container-fluid .form-submit-event', function (e) {
                 if ($('.form-submit-event').hasClass('add_affiliate_user_form_1')) {
                     window.location.href = base_url + 'affiliate/home';
                 }
+                if ($('.form-submit-event').hasClass('add_shipping_company')) {
+                    window.location.href = base_url + 'admin/shipping-companies/manage_shipping_company';
+                }
+
+
+                // SHIPPING COMPANY - Don't redirect, just refresh table
+                if ($('.form-submit-event').hasClass('add_shipping_company')) {
+                    // Just refresh the table, don't redirect
+                    $('#shipping_company_data').bootstrapTable('refresh');
+                    // Reset form after modal closes
+                    setTimeout(function () {
+                        $('.form-submit-event')[0].reset();
+                        $('#update_id').val('0');
+                        $('.edit_shipping_company').remove();
+                    }, 1100);
+                    return; // Exit here, don't reload page
+                }
+
                 $('.form-submit-event')[0].reset();
 
                 if (window.location.href.indexOf("login") > -1) {
@@ -4818,7 +4840,7 @@ $(document).on('click', '#delete-return-reason', function () {
     });
 });
 
-//11.Delivery_boys-Module 
+//11.Delivery_boys-Module
 $(document).on('click', '#delete-delivery-boys', function () {
     var id = $(this).data('id');
     Swal.fire({
@@ -4939,7 +4961,7 @@ $(document).on('change', '#transaction_type', function () {
     $('.table-striped').bootstrapTable('refresh');
 });
 
-//15.Customer-Wallet-Module  
+//15.Customer-Wallet-Module
 $('#customers').on('check.bs.table', function (e, row) {
     $('#customer_dtls').val(row.name + " | " + row.email);
     $('#user_id').val(row.id);
@@ -10202,7 +10224,7 @@ $(document).ready(function () {
         var csrfHash = $('input[name="csrfhash"]').val();
 
         formData.append(csrfName, csrfHash);
-        // return 
+        // return
         $.ajax({
             type: $(form).attr("method"),
             url: base_url + 'admin/Sms_gateway_settings/add_sms_data',
@@ -12013,7 +12035,7 @@ $('#copy-url-btn').on('click', function () {
     }
 });
 
-//  show affiliate token based on category 
+//  show affiliate token based on category
 // $('#product_category_tree_view_html').on('changed.jstree', function (e, data) {
 //     var affiliate_categories = $('#affiliate_categories').val();
 //     console.log(affiliate_categories);
@@ -12357,5 +12379,129 @@ $('.category-card').click(function () {
 $(document).ready(function () {
     $('.category-card').each(function (index) {
         $(this).css('animation-delay', (index * 0.1) + 's');
+    });
+});
+
+// Shipping company
+
+
+// Form submission for add/edit shipping company
+// defensive binding: remove any previous handlers then bind
+$(document).off('submit', '.add_shipping_company').on('submit', '.add_shipping_company', function (e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    var $form = $(this);
+    var $submitBtn = $form.find('button[type="submit"]'); // use local submit button
+    var originalBtnHtml = $submitBtn.html();
+
+    // disable button & show waiting state
+    $submitBtn.prop('disabled', true).html('Please wait...');
+
+    var formData = new FormData(this);
+
+    $.ajax({
+        type: 'POST',
+        url: $form.attr('action') && $form.attr('action') !== '' ? $form.attr('action') : (base_url + 'admin/shipping_companies/add_shipping_company'),
+        data: formData,
+        dataType: 'json',
+        contentType: false,
+        processData: false,
+        cache: false,
+        success: function (result) {
+            // re-enable button and restore text (choose appropriate label)
+            var submitLabel = (result.message && result.message.indexOf('Added') !== -1) ? 'Add Shipping Company' : 'Update Shipping Company';
+            $submitBtn.prop('disabled', false).html(submitLabel);
+
+            if (result.error === false) {
+                // hide modal, reset only this form, refresh table
+                $form.closest('.modal').modal('hide');
+                $form[0].reset();
+                $('#shipping_company_data').bootstrapTable('refresh');
+
+                // show toast (no blocking alert)
+                if (typeof iziToast !== 'undefined') {
+                    iziToast.success({
+                        title: 'Success',
+                        message: result.message || 'Success'
+                    });
+                } else {
+                    // fallback
+                    console.log('Success:', result.message);
+                }
+            } else {
+                if (typeof iziToast !== 'undefined') {
+                    iziToast.error({
+                        title: 'Error',
+                        message: result.message || 'Something went wrong'
+                    });
+                } else {
+                    console.warn('Error:', result.message);
+                }
+            }
+
+            // Update CSRF tokens if returned
+            if (result.csrfName && result.csrfHash) {
+                $('input[name="' + result.csrfName + '"]').val(result.csrfHash);
+            }
+        },
+        error: function (xhr, status, error) {
+            // restore button
+            $submitBtn.prop('disabled', false).html(originalBtnHtml || 'Submit');
+
+            if (typeof iziToast !== 'undefined') {
+                iziToast.error({
+                    title: 'Error',
+                    message: 'An error occurred. Please try again.'
+                });
+            } else {
+                console.error('AJAX error:', error);
+            }
+        }
+    });
+
+    // guarantee default submission doesn't continue
+    return false;
+});
+
+
+
+
+$(document).on('click', '#delete-shipping-company', function () {
+    var id = $(this).data('id');
+    Swal.fire({
+        title: 'Are You Sure !',
+        text: "You won't be able to revert this!",
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!',
+        showLoaderOnConfirm: true,
+        preConfirm: function () {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: base_url + 'admin/shipping_companies/delete_shipping_company',
+                    type: 'GET',
+                    data: {
+                        'id': id
+                    },
+                    dataType: 'json',
+                })
+                    .done(function (response, textStatus) {
+                        if (response.error == false) {
+                            Swal.fire('Deleted!', response.message, 'success');
+                            $('table').bootstrapTable('refresh');
+                        } else {
+                            Swal.fire('Oops...', response.message, 'warning');
+                        }
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR);
+                        Swal.fire('Oops...', 'Something went wrong with ajax !', 'error');
+                    });
+            });
+        },
+        allowOutsideClick: false
     });
 });

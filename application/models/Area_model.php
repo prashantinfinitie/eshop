@@ -224,6 +224,10 @@ class Area_model extends CI_Model
             }
             $tempRow['id'] = $row['id'];
             $tempRow['zipcode'] = $row['zipcode'];
+
+            $provider_type = ucwords(str_replace('_', ' ', $row['provider_type']));
+
+            $tempRow['provider_type'] = $provider_type;
             if (!$this->db->field_exists('city_id', 'zipcodes')) {
                 $tempRow['city_name'] = '';
                 $tempRow['minimum_free_delivery_order_amount'] = 0;

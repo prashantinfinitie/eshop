@@ -572,6 +572,44 @@ if ($authentication_settings !== null && is_string($authentication_settings)) {
                     </li>
                 <?php } ?>
 
+                <?php if (has_permissions('read', 'shipping_company') || has_permissions('read', 'fund_transfer')) { ?>
+                    <li class="nav-item has-treeview">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-id-card-alt text-info"></i>
+                            <p>
+                                Shipping Company
+                                <i class="fas fa-angle-left right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <?php if (has_permissions('read', 'shipping_company')) { ?>
+                                <li class="nav-item">
+                                    <a href="<?= base_url('admin/shipping-companies/manage_shipping_company') ?>" class="nav-link text-sm">
+                                        <i class="fas fa-user-cog nav-icon "></i>
+                                        <p> Manage Shipping Company </p>
+                                    </a>
+                                </li>
+                            <?php } ?>
+                            <?php if (has_permissions('read', 'fund_transfer')) { ?>
+                                <li class="nav-item">
+                                    <a href="<?= base_url('admin/shipping-companies/fund-transfer/') ?>" class="nav-link">
+                                        <i class="fa fa-rupee-sign nav-icon "></i>
+                                        <p>Fund Transfer</p>
+                                    </a>
+                                </li>
+                            <?php } ?>
+                            <?php if (has_permissions('read', 'delivery_boy')) { ?>
+                                <li class="nav-item">
+                                    <a href="<?= base_url('admin/shipping-companies/manage-cash') ?>" class="nav-link text-sm">
+                                        <i class="fas fa-money-bill-alt nav-icon "></i>
+                                        <p> Manage Cash Collection </p>
+                                    </a>
+                                </li>
+                            <?php } ?>
+                        </ul>
+                    </li>
+                <?php } ?>
+
                 <!-- I will permission for this module later. -->
                 <?php if (has_permissions('read', 'return_request')) { ?>
                     <li class="nav-item has-treeview">
@@ -703,7 +741,7 @@ if ($authentication_settings !== null && is_string($authentication_settings)) {
                                     <p>Notification Settings</p>
                                 </a>
                             </li>
-                            <? //php if (isset($authentication['authentication_method']) && $authentication['authentication_method'] == 'sms') { 
+                            <? //php if (isset($authentication['authentication_method']) && $authentication['authentication_method'] == 'sms') {
                             ?>
                             <li class="nav-item">
                                 <a href="<?= base_url('admin/sms-gateway-settings') ?>" class="nav-link">
@@ -711,7 +749,7 @@ if ($authentication_settings !== null && is_string($authentication_settings)) {
                                     <p>SMS Gateway Settings</p>
                                 </a>
                             </li>
-                            <? //php } 
+                            <? //php }
                             ?>
                             <li class="nav-item">
                                 <a href="<?= base_url('admin/contact-us') ?>" class="nav-link">
@@ -777,7 +815,7 @@ if ($authentication_settings !== null && is_string($authentication_settings)) {
                                     <p>Languages</p>
                                 </a>
                             </li>
-                            <? //php if (isset($authentication['authentication_method']) && $authentication['authentication_method'] == 'firebase') { 
+                            <? //php if (isset($authentication['authentication_method']) && $authentication['authentication_method'] == 'firebase') {
                             ?>
                             <li class="nav-item">
                                 <a href="<?= base_url('admin/web-setting/firebase') ?>" class="nav-link">
@@ -785,7 +823,7 @@ if ($authentication_settings !== null && is_string($authentication_settings)) {
                                     <p>Firebase</p>
                                 </a>
                             </li>
-                            <? //php } 
+                            <? //php }
                             ?>
                         </ul>
                     </li>
