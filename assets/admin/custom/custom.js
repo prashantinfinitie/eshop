@@ -1456,6 +1456,17 @@ function delivery_boy_status_params(p) {
     };
 }
 
+function shipping_company_status_params(p) {
+    return {
+        "shipping_company_status": $('#shipping_company_status_filter').val(),
+        limit: p.limit,
+        sort: p.sort,
+        order: p.order,
+        offset: p.offset,
+        search: p.search
+    };
+}
+
 function stock_query_params(p) {
     return {
         "status": $('#status_filter').val(),
@@ -1888,6 +1899,7 @@ function searchable_zipcodes() {
                 };
             },
             processResults: function (response, params) {
+
                 params.page = params.page || 1;
 
                 return {
@@ -2284,11 +2296,13 @@ $(document).on('change', '#message_type', function () {
 $(document).on('change', '#status_filter', function () {
     $('#products_table').bootstrapTable('refresh');
 });
+$(document).on('change', '#shipping_company_status_filter', function () {
+    $('#shipping_company_data').bootstrapTable('refresh');
+});
+
 
 //Summer-note
 $(document).ready(function () {
-
-
 
     var sub_id = $('#subcategory_id_js').val();
     if (typeof sub_id !== 'undefined') {
@@ -12504,4 +12518,144 @@ $(document).on('click', '#delete-shipping-company', function () {
         },
         allowOutsideClick: false
     });
+});
+
+
+
+
+// Reusable Select2 initializer for "assign_zipcode" selects
+function initAssignZipcode($select, dropdownParentSelector) {
+    if (!$select || $select.data('select2-initialized')) return;
+
+    $select.select2({
+        placeholder: "Select Zipcodes",
+        allowClear: true,
+        dropdownParent: dropdownParentSelector ? $(dropdownParentSelector) : $(document.body),
+        ajax: {
+            url: base_url + 'admin/shipping_companies/get_company_zipcodes',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return { search: params.term };
+            },
+            processResults: function (data) {
+                return {
+                    results: $.map(data, function (item) {
+                        return { id: item.id, text: item.zipcode };
+                    })
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 0
+    });
+
+    // Mark as initialized so we don't re-init on the same element
+    $select.data('select2-initialized', true);
+
+    // If the server provided initial selected values as JSON in data-selected attribute,
+    // populate them here so they show as selected in Select2.
+    // Expected format for data-selected: [{"id":"12","zipcode":"400001"}, {"id":"23","zipcode":"400002"}]
+    var selectedJson = $select.attr('data-selected');
+    if (selectedJson) {
+        try {
+            var items = JSON.parse(selectedJson);
+            items.forEach(function (it) {
+                // create a new Option and append to the select
+                var option = new Option(it.zipcode, it.id, true, true);
+                $select.append(option);
+            });
+            $select.trigger('change');
+        } catch (e) {
+            console.warn('assign_zipcode: invalid data-selected JSON', e);
+        }
+    }
+}
+
+// when DOM ready, initialize all matching selects present on the page
+$(function () {
+    // Use class selector so both modal & page instances work. -> change your HTML select id to class "assign_zipcode"
+    $('.assign_zipcode').each(function () {
+        // if the select is inside a modal, use the modal as dropdownParent
+        var $this = $(this);
+        var $modal = $this.closest('.modal');
+        var parent = $modal.length ? $modal : $(document.body);
+        initAssignZipcode($this, parent);
+    });
+});
+
+// For dynamically loaded content (like modal body loaded via AJAX), initialize when modal shown
+$(document).on('shown.bs.modal', function (e) {
+    var $modal = $(e.target);
+    $modal.find('.assign_zipcode').each(function () {
+        initAssignZipcode($(this), $modal);
+    });
+});
+
+
+// cash collection and fund transfer
+
+// JavaScript for Shipping Company Cash Collection
+
+$(document).ready(function () {
+    // // Date picker initialization
+    // $('#datepicker').daterangepicker({
+    //     locale: {
+    //         format: 'DD-MM-YYYY'
+    //     }
+    // });
+
+    // Handle edit cash collection button
+    $(document).on('click', '.edit_cash_collection_btn', function () {
+        var id = $(this).data('id');
+        var order_id = $(this).data('order-id');
+        var amount = $(this).data('amount');
+        var company_id = $(this).data('company-id');
+
+        $('#transaction_id').val(id);
+        $('#order_id').val(order_id);
+        $('#amount').val(amount);
+        $('#order_amount').val(amount);
+        $('#shipping_company_id').val(company_id);
+
+        $('#details').val('Order ID: ' + order_id + '\nAmount: ' + amount);
+    });
+});
+
+// Query params for cash collection table
+function cash_collection_query_params(p) {
+    return {
+        limit: p.limit,
+        sort: p.sort,
+        order: p.order,
+        offset: p.offset,
+        search: p.search,
+        start_date: $('#start_date').val(),
+        end_date: $('#end_date').val(),
+        filter_status: $('#filter_status').val(),
+        filter_company: $('#filter_company').val()
+    };
+}
+
+// Filter function
+function status_date_wise_search() {
+    var date = $('#datepicker').val();
+    if (date !== '') {
+        var dates = date.split(' - ');
+        var start_date = dates[0].split('-').reverse().join('-');
+        var end_date = dates[1].split('-').reverse().join('-');
+        $('#start_date').val(start_date);
+        $('#end_date').val(end_date);
+    }
+
+    $('table').bootstrapTable('refresh');
+}
+
+// Reset form on modal close
+$('#cash_collection_model').on('hidden.bs.modal', function () {
+    $(this).find('form')[0].reset();
+    $('#transaction_id').val('');
+    $('#order_id').val('');
+    $('#shipping_company_id').val('');
+    $('#details').val('');
 });

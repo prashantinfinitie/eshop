@@ -99,7 +99,7 @@
                                 </select>
                             </div>
                             <div class="card-tools">
-                                <button type="button" class="btn btn-block  btn-outline-primary btn-sm" data-toggle="modal" data-target="#add_shipping_company">
+                                <button type="button" class="btn btn-block btn-outline-primary btn-sm" data-toggle="modal" data-target="#add_shipping_company">
                                     Add Shipping Company
                                 </button>
                             </div>
@@ -122,7 +122,7 @@
                                         <th data-field="email" data-sortable="false">Email</th>
                                         <th data-field="mobile" data-sortable="true">Mobile No</th>
                                         <th data-field="address" data-sortable="false">Address</th>
-                                        <th data-field="balance" data-sortable="true">Balance</th>
+                                        <!-- <th data-field="balance" data-sortable="true">Balance</th> -->
                                         <th data-field="status" data-sortable="true">Status</th>
                                         <th data-field="date" data-sortable="true">Date</th>
                                         <th data-field="operate" data-sortable="false">Actions</th>
@@ -197,46 +197,27 @@
                                 </div>
                             </div>
 
-                            <?php
-                            $pincode_wise_deliverability = (isset($shipping_method['pincode_wise_deliverability']) && $shipping_method['pincode_wise_deliverability'] == 1) ? $shipping_method['pincode_wise_deliverability'] : '0';
-                            $city_wise_deliverability = (isset($shipping_method['city_wise_deliverability']) && $shipping_method['city_wise_deliverability'] == 1) ? $shipping_method['city_wise_deliverability'] : '0';
-                            ?>
-
-                            <input type="hidden" name="city_wise_deliverability" value="<?= $city_wise_deliverability ?>">
-                            <input type="hidden" name="pincode_wise_deliverability" value="<?= $pincode_wise_deliverability ?>">
-
                             <div class="form-group row">
-                                <?php if ((isset($shipping_method['pincode_wise_deliverability']) && $shipping_method['pincode_wise_deliverability'] == 1) || (isset($shipping_method['local_shipping_method']) && isset($shipping_method['shiprocket_shipping_method']) && $shipping_method['local_shipping_method'] == 1 && $shipping_method['shiprocket_shipping_method'] == 1)) { ?>
-                                    <label for="serviceable_zipcodes" class="col-form-label col-sm-3">Serviceable Zipcodes <span class='text-danger text-sm'>*</span></label>
-                                    <div class="col-sm-9">
-                                        <?php
-                                        $zipcodes = (isset($fetched_data[0]['serviceable_zipcodes']) &&  $fetched_data[0]['serviceable_zipcodes'] != NULL) ? explode(",", $fetched_data[0]['serviceable_zipcodes']) : [];
-                                        $zipcodes_name = fetch_details('zipcodes', "", 'zipcode,id', "", "", "", "", "id", $zipcodes);
-                                        ?>
-                                        <select name="serviceable_zipcodes[]" class="search_zipcode form-control w-100" multiple onload="multiselect()" id="serviceable_zipcodes">
-                                            <?php if (isset($zipcodes) && !empty($zipcodes)) {
-                                                foreach ($zipcodes_name as $row) {
-                                            ?>
-                                                    <option value="<?= $row['id'] ?>" <?= (!empty($zipcodes) && in_array($row['id'], $zipcodes)) ? 'selected' : ''; ?>><?= $row['zipcode'] ?></option>
-                                            <?php }
-                                            } ?>
-                                        </select>
-                                    </div>
-
-                                <?php  }
-                                if (isset($shipping_method['city_wise_deliverability']) && $shipping_method['city_wise_deliverability'] == 1 && $shipping_method['shiprocket_shipping_method'] != 1) { ?>
-                                    <label for="cities" class="col-form-label col-sm-3">Serviceable Cities <span class='text-danger text-sm'>*</span></label>
+                                <label for="assign_zipcode" class="col-form-label col-sm-3">Assign Zipcodes <span class='text-danger text-sm'>*</span></label>
+                                <div class="col-sm-9">
                                     <?php
-                                    $selected_city_ids = (isset($fetched_data[0]['serviceable_cities']) &&  $fetched_data[0]['serviceable_cities'] != NULL) ? explode(",", $fetched_data[0]['serviceable_cities']) : [];
+                                    $assigned_zipcodes = (isset($fetched_data[0]['assign_zipcode']) && $fetched_data[0]['assign_zipcode'] != NULL) ? explode(",", $fetched_data[0]['assign_zipcode']) : [];
+
+                                    $zipcodes_data = [];
+                                    if (!empty($assigned_zipcodes)) {
+                                        $zipcodes_data = fetch_details('zipcodes', ['provider_type' => 'company'], 'zipcode,id', "", "", "", "", "id", $assigned_zipcodes);
+                                    }
                                     ?>
-                                    <div class="col-sm-9">
-                                        <select class="form-control city_list " name="serviceable_cities[]" id="serviceable_cities" multiple>
-                                            <?php foreach ($cities as $row) { ?>
-                                                <option value="<?= $row['id'] ?>" <?= (in_array($row['id'], $selected_city_ids)) ? 'selected' : ''; ?>><?= $row['name'] ?></option>
-                                            <?php }; ?>
-                                        </select>
-                                    </div>
-                                <?php } ?>
+                                    <select name="assign_zipcode[]" class="assign_zipcode form-control w-100" multiple onload="multiselect()" id="">
+                                        <?php if (!empty($zipcodes_data)) {
+                                            foreach ($zipcodes_data as $row) {
+                                        ?>
+                                                <option value="<?= $row['id'] ?>" <?= (in_array($row['id'], $assigned_zipcodes)) ? 'selected' : ''; ?>><?= $row['zipcode'] ?></option>
+                                        <?php }
+                                        } ?>
+                                    </select>
+                                    <small class="form-text text-muted">Only zipcodes for shipping companies</small>
+                                </div>
                             </div>
 
                             <div class="form-group row">
@@ -302,14 +283,33 @@
 
 <!-- <script>
     $(document).ready(function() {
-        // Status filter
-        $('#shipping_company_status_filter').on('change', function() {
-            $('#shipping_company_data').bootstrapTable('refresh');
+        // Initialize Select2 for modal zipcode selection
+        $('#assign_zipcode').select2({
+            placeholder: "Select Zipcodes",
+            allowClear: true,
+            dropdownParent: $('#add_shipping_company'),
+            ajax: {
+                url: '<?= base_url("admin/shipping_companies/get_company_zipcodes") ?>',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        search: params.term
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: $.map(data, function(item) {
+                            return {
+                                id: item.id,
+                                text: item.zipcode
+                            }
+                        })
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 0
         });
     });
-
-    function shipping_company_status_params(p) {
-        p.shipping_company_status = $('#shipping_company_status_filter').val();
-        return p;
-    }
 </script> -->

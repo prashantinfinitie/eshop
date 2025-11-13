@@ -109,8 +109,11 @@
                                         <div class="col-sm-10">
                                             <?php
                                             $zipcodes = (isset($fetched_data[0]['serviceable_zipcodes']) &&  $fetched_data[0]['serviceable_zipcodes'] != NULL) ? explode(",", $fetched_data[0]['serviceable_zipcodes']) : [];
-                                            $zipcodes_name = fetch_details('zipcodes', "", 'zipcode,id', "", "", "", "", "id", $zipcodes);
 
+                                            if (!empty($zipcodes)) {
+                                                $zipcodes_name = fetch_details('zipcodes', ['provider_type' => 'delivery_boy'], 'zipcode,id', "", "", "", "", "id", $zipcodes);
+                                            }
+                                            // print_r($zipcodes_name);
                                             ?>
                                             <select name="serviceable_zipcodes[]" class="search_zipcode form-control w-100" multiple onload="multiselect()" id="deliverable_zipcodes">
                                                 <?php if (isset($zipcodes) && !empty($zipcodes)) {
@@ -127,7 +130,7 @@
                                         <label for="cities" class="col-form-label col-sm-2">Serviceable Cities <span class='text-danger text-sm'>*</span></label>
                                         <?php
                                         $selected_city_ids = (isset($fetched_data[0]['serviceable_cities']) &&  $fetched_data[0]['serviceable_cities'] != NULL) ? explode(",", $fetched_data[0]['serviceable_cities']) : [];
-                                        
+
                                         ?>
                                         <div class="col-sm-10">
 
@@ -155,7 +158,7 @@
                                     <?php
                                     if (isset($fetched_data[0]['driving_license']) && !empty($fetched_data[0]['driving_license'])) {
                                         $images = explode(",", $fetched_data[0]['driving_license']);
-                                        
+
                                         foreach ($images as $row) { ?>
                                             <label class="col-sm-2 col-form-label"></label>
                                             <div class="mx-auto col-sm-10 driving-license-image">

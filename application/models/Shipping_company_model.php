@@ -19,8 +19,7 @@ class Shipping_company_model extends CI_Model
             'email' => $data['email'],
             'mobile' => $data['mobile'],
             'address' => $data['address'],
-            'serviceable_zipcodes' => $data['serviceable_zipcodes'],
-            'serviceable_cities' => $data['serviceable_cities'],
+            'serviceable_zipcodes' => $data['assign_zipcode'],
             'kyc_documents' => $data['kyc_documents'],
             'status' => $data['status'],
         ];
@@ -133,7 +132,7 @@ class Shipping_company_model extends CI_Model
             }
 
             $tempRow['address'] = $row['address'];
-            $tempRow['balance'] =  $row['balance'] == null || $row['balance'] == 0 || empty($row['balance']) ? "0" : number_format($row['balance'], 2);
+            // $tempRow['balance'] =  $row['balance'] == null || $row['balance'] == 0 || empty($row['balance']) ? "0" : number_format($row['balance'], 2);
             $tempRow['cash_received'] = $row['cash_received'];
             $tempRow['date'] = date('d-m-Y', strtotime($row['created_at']));
             $tempRow['operate'] = $operate;
@@ -284,6 +283,115 @@ class Shipping_company_model extends CI_Model
             $tempRow['txn_date'] =  date('d-m-Y', strtotime($row['transaction_date']));
             $tempRow['date'] =  date('d-m-Y', strtotime($row['date_created']));
             $tempRow['operate'] = $operate;
+
+            $rows[] = $tempRow;
+        }
+        $bulkData['rows'] = $rows;
+        print_r(json_encode($bulkData));
+    }
+
+    function get_fund_transfers_list()
+    {
+        $offset = 0;
+        $limit = 10;
+        $sort = 'id';
+        $order = 'ASC';
+        $multipleWhere = '';
+        $where = [];
+
+        if (isset($_GET['offset']))
+            $offset = $_GET['offset'];
+        if (isset($_GET['limit']))
+            $limit = $_GET['limit'];
+
+        if (isset($_GET['sort']))
+            if ($_GET['sort'] == 'id') {
+                $sort = "id";
+            } else {
+                $sort = $_GET['sort'];
+            }
+        if (isset($_GET['order']))
+            $order = $_GET['order'];
+
+        if (isset($_GET['search']) and $_GET['search'] != '') {
+            $search = $_GET['search'];
+            $multipleWhere = [
+                '`transactions.id`' => $search,
+                '`transactions.amount`' => $search,
+                '`transactions.date_created`' => $search,
+                'users.username' => $search,
+                'users.mobile' => $search,
+                'users.email' => $search,
+                'transactions.type' => $search,
+                'transactions.status' => $search
+            ];
+        }
+
+        $count_res = $this->db->select(' COUNT(transactions.id) as `total` ')
+            ->join('users', ' transactions.user_id = users.id', 'left')
+            ->join('users_groups ug', 'ug.user_id = users.id', 'left')
+            ->where('ug.group_id', '6')
+            ->where('transactions.transaction_type', 'transaction')
+            ->where_in('transactions.type', ['credit', 'debit']);
+
+        if (isset($multipleWhere) && !empty($multipleWhere)) {
+            $this->db->group_Start();
+            $count_res->or_like($multipleWhere);
+            $this->db->group_End();
+        }
+        if (isset($where) && !empty($where)) {
+            $count_res->where($where);
+        }
+
+        $txn_count = $count_res->get('transactions')->result_array();
+
+        foreach ($txn_count as $row) {
+            $total = $row['total'];
+        }
+
+        $search_res = $this->db->select(' transactions.*, users.username as name, users.mobile, users.balance');
+
+        if (isset($multipleWhere) && !empty($multipleWhere)) {
+            $this->db->group_Start();
+            $search_res->or_like($multipleWhere);
+            $this->db->group_End();
+        }
+        if (isset($where) && !empty($where)) {
+            $search_res->where($where);
+        }
+
+        $search_res->join('users', ' transactions.user_id = users.id', 'left')
+            ->join('users_groups ug', 'ug.user_id = users.id', 'left')
+            ->where('ug.group_id', '6')
+            ->where('transactions.transaction_type', 'transaction')
+            ->where_in('transactions.type', ['credit', 'debit']);
+
+        $txn_search_res = $search_res->order_by($sort, $order)->limit($limit, $offset)->get('transactions')->result_array();
+
+        $bulkData = array();
+        $bulkData['total'] = $total;
+        $rows = array();
+        $tempRow = array();
+
+        foreach ($txn_search_res as $row) {
+            $row = output_escaping($row);
+            $tempRow['id'] = $row['id'];
+            $tempRow['name'] = $row['name'];
+            $tempRow['mobile'] = $row['mobile'];
+            $tempRow['opening_balance'] = $row['balance'];
+
+            if ($row['type'] == 'credit') {
+                $tempRow['closing_balance'] = floatval($row['balance']) + floatval($row['amount']);
+            } else {
+                $tempRow['closing_balance'] = floatval($row['balance']) - floatval($row['amount']);
+            }
+
+            $tempRow['amount'] = $row['amount'];
+            $tempRow['status'] = $row['type'] == 'credit'
+                ? '<label class="badge badge-success">Credit</label>'
+                : '<label class="badge badge-danger">Debit</label>';
+            $tempRow['message'] = $row['message'];
+            $tempRow['date_created'] = date('d-m-Y', strtotime($row['date_created']));
 
             $rows[] = $tempRow;
         }

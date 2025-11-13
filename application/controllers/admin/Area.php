@@ -353,6 +353,7 @@ class Area extends CI_Controller
             $search =  (isset($_GET['search'])) ? $_GET['search'] : null;
             $seller_id =  (isset($_GET['seller_id'])) ? $_GET['seller_id'] : null;
             $zipcodes = $this->Area_model->get_zipcodes($search, $limit, $offset, $seller_id);
+
             $this->response['data'] = $zipcodes['data'];
             $this->response['csrfName'] = $this->security->get_csrf_token_name();
             $this->response['csrfHash'] = $this->security->get_csrf_hash();

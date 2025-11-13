@@ -247,8 +247,10 @@ class Area_model extends CI_Model
     }
 
 
-    function get_zipcodes($search = '', $limit = NULL, $offset = NULL, $seller_id = '')
+    function get_zipcodes($search = '', $limit = NULL, $offset = NULL, $seller_id = '',)
     {
+
+
         $where = [];
         $zipcodes = [];
         //Fetch serviceable zipcodes from seller_data
@@ -273,6 +275,8 @@ class Area_model extends CI_Model
             $this->db->where_in('id', $zipcodes);
         }
 
+
+        $this->db->where('provider_type', 'delivery_boy');
         //Get total count
         $total = $this->db->select('COUNT(id) as total')
             ->from('zipcodes')
@@ -283,6 +287,7 @@ class Area_model extends CI_Model
 
         // Fetch Zipcodes
         $this->db->select('*')->from('zipcodes')->where($where);
+        $this->db->where('provider_type', 'delivery_boy');
         if (!empty($zipcodes)) {
             $this->db->where_in('id', $zipcodes);
         }
@@ -294,7 +299,6 @@ class Area_model extends CI_Model
             'error'   => empty($cat_search_res),
             'message' => empty($cat_search_res) ? 'No serviceable pincodes found' : 'Pincodes retrieved successfully',
             'total'   => $total,
-
             'data'    => []
         ];
 

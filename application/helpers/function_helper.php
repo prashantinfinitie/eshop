@@ -23,14 +23,14 @@ defined('BASEPATH') or exit('No direct script access allowed');
    19. verify_user($data)
    20. edit_unique($field,$table,$except)
    21. validate_order_status($order_ids, $status, $table = 'order_items', $user_id = null)
-   22. is_exist($where,$table) 
+   22. is_exist($where,$table)
    23. get_categories_option_html($categories, $selected_vals = null)
    24. get_subcategory_option_html($subcategories, $selected_vals)
    25. get_cart_total($user_id,$product_variant_id)
    26. get_frontend_categories_html()
    27. get_frontend_subcategories_html($subcategories)
    28. resize_image($image_data, $source_path, $id = false)
-   29. has_permissions($role,$module) 
+   29. has_permissions($role,$module)
    30. print_msg($error,$message)
    31. get_system_update_info()
    32. send_mail($to,$subject,$message)
@@ -282,7 +282,7 @@ function fetch_product($user_id = NULL, $filter = NULL, $id = NULL, $category_id
      sd.no_of_ratings as seller_no_of_ratings,sd.logo as seller_profile, sd.store_name as store_name,sd.store_description, p.seller_id, u.username as seller_name,
      p.id,p.stock,pv.stock as product_variant_stock,p.name,pv.special_price,p.category_id, p.attribute_order,p.short_description,p.slug,p.description,p.extra_description,p.total_allowed_quantity,
      p.status,p.deliverable_type,p.is_attachment_required,p.deliverable_zipcodes,p.deliverable_cities,p.deliverable_city_type,p.minimum_order_quantity,p.sku,
-     p.quantity_step_size,p.cod_allowed,p.row_order,p.rating,p.no_of_ratings,p.image,p.is_returnable,p.is_cancelable,p.cancelable_till,p.indicator,p.other_images, 
+     p.quantity_step_size,p.cod_allowed,p.row_order,p.rating,p.no_of_ratings,p.image,p.is_returnable,p.is_cancelable,p.cancelable_till,p.indicator,p.other_images,
      p.video_type, p.video, p.tags, p.warranty_period, p.guarantee_period, p.made_in,p.hsn_code,p.download_allowed,p.download_type,p.download_link,p.pickup_location,
      p.brand as product_brand,b.id as brand_id,b.name as brand, b.image as brand_image,p.availability, p.slug as product_slug, b.slug as brand_slug,c.name as category_name,c.slug as category_slug,
      (SELECT GROUP_CONCAT(tax.percentage) FROM taxes as tax WHERE FIND_IN_SET(tax.id, p.tax)) as tax_percentage ,
@@ -327,23 +327,23 @@ function fetch_product($user_id = NULL, $filter = NULL, $id = NULL, $category_id
             $t->db->where($where1);
             if ('p.stock_type' == '0') {
 
-                $t->db->where('(CASE 
-                    WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit 
-                    ELSE p.stock <= sd.low_stock_limit 
+                $t->db->where('(CASE
+                    WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit
+                    ELSE p.stock <= sd.low_stock_limit
                 END)');
                 $t->db->where('p.availability =', '1');
             } else {
 
                 // Check product low_stock_limit first, if 0, use seller_data low_stock_limit
-                // $t->db->where('(CASE 
-                //     WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit 
-                //     ELSE p.stock <= sd.low_stock_limit 
+                // $t->db->where('(CASE
+                //     WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit
+                //     ELSE p.stock <= sd.low_stock_limit
                 // END)');
                 // $t->db->where('p.availability =', '1');
 
-                $t->db->where('(CASE 
-                    WHEN p.low_stock_limit > 0 THEN pv.stock <= p.low_stock_limit 
-                    ELSE pv.stock <= sd.low_stock_limit 
+                $t->db->where('(CASE
+                    WHEN p.low_stock_limit > 0 THEN pv.stock <= p.low_stock_limit
+                    ELSE pv.stock <= sd.low_stock_limit
                 END)');
                 $t->db->where('pv.availability =', '1');
             }
@@ -584,23 +584,23 @@ function fetch_product($user_id = NULL, $filter = NULL, $id = NULL, $category_id
             $t->db->where($where1);
             if ('p.stock_type' == '0') {
 
-                $t->db->where('(CASE 
-                    WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit 
-                    ELSE p.stock <= sd.low_stock_limit 
+                $t->db->where('(CASE
+                    WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit
+                    ELSE p.stock <= sd.low_stock_limit
                 END)');
                 $t->db->where('p.availability =', '1');
             } else {
 
                 // Check product low_stock_limit first, if 0, use seller_data low_stock_limit
-                // $t->db->where('(CASE 
-                //     WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit 
-                //     ELSE p.stock <= sd.low_stock_limit 
+                // $t->db->where('(CASE
+                //     WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit
+                //     ELSE p.stock <= sd.low_stock_limit
                 // END)');
                 // $t->db->where('p.availability =', '1');
 
-                $t->db->where('(CASE 
-                    WHEN p.low_stock_limit > 0 THEN pv.stock <= p.low_stock_limit 
-                    ELSE pv.stock <= sd.low_stock_limit 
+                $t->db->where('(CASE
+                    WHEN p.low_stock_limit > 0 THEN pv.stock <= p.low_stock_limit
+                    ELSE pv.stock <= sd.low_stock_limit
                 END)');
                 $t->db->where('pv.availability =', '1');
             }
@@ -664,7 +664,7 @@ function fetch_product($user_id = NULL, $filter = NULL, $id = NULL, $category_id
     }
 
     if (isset($filter) && !empty($filter['attribute_value_ids'])) {
-        $str = str_replace(',', '|', $filter['attribute_value_ids']); // Ids should be in string and comma separated 
+        $str = str_replace(',', '|', $filter['attribute_value_ids']); // Ids should be in string and comma separated
         $product_count->where('CONCAT(",", pa.attribute_value_ids, ",") REGEXP ",(' . $str . ')," !=', 0, false);
     }
     if (isset($filter) && !empty($filter['product_type']) && strtolower($filter['product_type']) == 'most_selling_products') {
@@ -1636,17 +1636,17 @@ function update_stock($product_variant_ids, $qtns, $type = '')
 {
 
     /*
-        --First Check => Is stock management active (Stock type != NULL) 
-        Case 1 : Simple Product 		
-        Case 2 : Variable Product (Product Level,Variant Level) 			
+        --First Check => Is stock management active (Stock type != NULL)
+        Case 1 : Simple Product
+        Case 2 : Variable Product (Product Level,Variant Level)
 
         Stock Type :
             0 => Simple Product(simple product)
-                  -Stock will be stored in (product)master table	
+                  -Stock will be stored in (product)master table
             1 => Product level(variable product)
-                -Stock will be stored in product_variant table	
-            2 => Variant level(variable product)		
-                -Stock will be stored in product_variant table	
+                -Stock will be stored in product_variant table
+            2 => Variant level(variable product)
+                -Stock will be stored in product_variant table
         */
     $t = &get_instance();
     $ids = implode(',', (array) $product_variant_ids);
@@ -1726,17 +1726,17 @@ function update_stock($product_variant_ids, $qtns, $type = '')
 function validate_stock($product_variant_ids, $qtns)
 {
     /*
-        --First Check => Is stock management active (Stock type != NULL) 
-        Case 1 : Simple Product 		
-        Case 2 : Variable Product (Product Level,Variant Level) 			
+        --First Check => Is stock management active (Stock type != NULL)
+        Case 1 : Simple Product
+        Case 2 : Variable Product (Product Level,Variant Level)
 
         Stock Type :
             0 => Simple Product(simple product)
-                  -Stock will be stored in (product)master table	
+                  -Stock will be stored in (product)master table
             1 => Product level(variable product)
-                -Stock will be stored in product_variant table	
-            2 => Variant level(variable product)		
-                -Stock will be stored in product_variant table	
+                -Stock will be stored in product_variant table
+            2 => Variant level(variable product)
+                -Stock will be stored in product_variant table
         */
     $t = &get_instance();
     $response = array();
@@ -1796,17 +1796,17 @@ function validate_stock($product_variant_ids, $qtns)
 function stock_status($product_variant_id)
 {
     /*
-        --First Check => Is stock management active (Stock type != NULL) 
-        Case 1 : Simple Product 		
-        Case 2 : Variable Product (Product Level,Variant Level) 			
+        --First Check => Is stock management active (Stock type != NULL)
+        Case 1 : Simple Product
+        Case 2 : Variable Product (Product Level,Variant Level)
 
         Stock Type :
             0 => Simple Product(simple product)
-                  -Stock will be stored in (product)master table	
+                  -Stock will be stored in (product)master table
             1 => Product level(variable product)
-                -Stock will be stored in product_variant table	
-            2 => Variant level(variable product)		
-                -Stock will be stored in product_variant table	
+                -Stock will be stored in product_variant table
+            2 => Variant level(variable product)
+                -Stock will be stored in product_variant table
         */
     $t = &get_instance();
     $res = $t->db->select('p.*,pv.*,pv.id as pv_id,p.stock as p_stock,pv.stock as pv_stock')->where_in('pv.id', $product_variant_id)->join('products p', 'pv.product_id = p.id')->get('product_variants pv')->result_array();
@@ -2730,19 +2730,19 @@ function get_subcategory_option_html($subcategories, $selected_vals, $used_ids =
 function get_cart_total($user_id, $product_variant_id = false, $is_saved_for_later = '0', $address_id = '', $delivery_method = '', $token = '')
 {
     $t = &get_instance();
-    $t->db->select('(select sum(c.qty)  from cart c 
-    join product_variants pv on c.product_variant_id=pv.id 
-    join products p on p.id=pv.product_id 
-    join seller_data sd on sd.user_id=p.seller_id  where c.user_id="' . $user_id . '" 
-    and qty >= 0  and  is_saved_for_later = "' . $is_saved_for_later . '" 
+    $t->db->select('(select sum(c.qty)  from cart c
+    join product_variants pv on c.product_variant_id=pv.id
+    join products p on p.id=pv.product_id
+    join seller_data sd on sd.user_id=p.seller_id  where c.user_id="' . $user_id . '"
+    and qty >= 0  and  is_saved_for_later = "' . $is_saved_for_later . '"
     and p.status=1 AND pv.status=1 AND sd.status=1) as total_items,
-    (select count(c.id) from cart c 
-    join product_variants pv on c.product_variant_id=pv.id 
-    join products p on p.id=pv.product_id 
-    join seller_data sd on sd.user_id=p.seller_id where c.user_id="' . $user_id . '" and qty>=0 and  is_saved_for_later = "' . $is_saved_for_later . '" 
+    (select count(c.id) from cart c
+    join product_variants pv on c.product_variant_id=pv.id
+    join products p on p.id=pv.product_id
+    join seller_data sd on sd.user_id=p.seller_id where c.user_id="' . $user_id . '" and qty>=0 and  is_saved_for_later = "' . $is_saved_for_later . '"
     and p.status=1 AND pv.status=1 AND sd.status=1) as cart_count,
     c.qty,c.is_saved_for_later,p.is_prices_inclusive_tax,p.cod_allowed,p.type,p.download_allowed,p.minimum_order_quantity,p.slug,p.quantity_step_size,
-    p.total_allowed_quantity, p.name, p.image, p.stock as product_stock,p.seller_id as product_seller_id, p.is_attachment_required, p.availability as product_availability, 
+    p.total_allowed_quantity, p.name, p.image, p.stock as product_stock,p.seller_id as product_seller_id, p.is_attachment_required, p.availability as product_availability,
     p.short_description,p.pickup_location,p.is_prices_inclusive_tax,p.category_id,sd.commission as seller_globle_commission,pv.weight,c.user_id,pv.*,
     (SELECT GROUP_CONCAT(tax.percentage) FROM taxes as tax WHERE FIND_IN_SET(tax.id, p.tax)) as tax_percentage,
     (SELECT GROUP_CONCAT(tax.id) FROM taxes as tax WHERE FIND_IN_SET(tax.id, p.tax)) as tax_ids,
@@ -3056,9 +3056,9 @@ function resize_image($image_data, $source_path, $id = false)
         $image_type = ['thumb', 'cropped'];
         $image_size = ['md' => array('width' => 800, 'height' => 800), 'sm' => array('width' => 350, 'height' => 350)];
         $target_path = $source_path; // Target path will be under source path
-        $image_name = $image_data['file_name']; // original image's name    
-        $w = $image_data['image_width']; // original image's width    
-        $h = $image_data['image_height']; // original images's height 
+        $image_name = $image_data['file_name']; // original image's name
+        $w = $image_data['image_width']; // original image's width
+        $h = $image_data['image_height']; // original images's height
 
         $t->load->library('image_lib');
 
@@ -3066,7 +3066,7 @@ function resize_image($image_data, $source_path, $id = false)
 
             if (file_exists($source_path . $image_name)) {
 
-                //check if the image file exist 
+                //check if the image file exist
                 foreach ($image_size as $image_size_key => $image_size_value) {
                     if (!file_exists($target_path . $image_type[$i] . '-' . $image_size_key)) {
                         mkdir($target_path . $image_type[$i] . '-' . $image_size_key, 0777);
@@ -3088,9 +3088,9 @@ function resize_image($image_data, $source_path, $id = false)
                         $height = $data[1];
                         $config['source_image'] = (file_exists($thumb_path)) ? $thumb_path : $image_name;
 
-                        /*  x-axis : (left)   
-                        width : (right)   
-                        y-axis : (top)    
+                        /*  x-axis : (left)
+                        width : (right)
+                        y-axis : (top)
                         height : (bottom) */
                         $config['maintain_ratio'] = false;
 
@@ -3224,6 +3224,8 @@ function get_system_update_info()
 
 function send_mail($to, $subject, $message)
 {
+    // print_r($message);
+    // die();
     $t = &get_instance();
     $settings = get_settings('system_settings', true);
     $t->load->library('email');
@@ -3465,7 +3467,7 @@ function fetch_orders($order_id = NULL, $user_id = NULL, $status = NULL, $delive
         $t->db->select('oi.*,p.id as product_id,p.is_cancelable,p.is_prices_inclusive_tax,p.cancelable_till,p.type,p.slug,
             p.download_allowed,p.download_link,sd.store_name,u.longitude as seller_longitude,u.mobile as seller_mobile,
             u.address as seller_address,u.latitude as seller_latitude,
-            (select username from users where id=oi.delivery_boy_id) as delivery_boy_name, oi.return_reason, oi.return_item_image, 
+            (select username from users where id=oi.delivery_boy_id) as delivery_boy_name, oi.return_reason, oi.return_item_image,
             sd.store_description,sd.rating as seller_rating,sd.logo as seller_profile,ot.courier_agency,
             ot.tracking_id,ot.awb_code,ot.url,u.username as seller_name,p.is_returnable,
             pv.special_price,pv.price as main_price,p.image,p.name,p.pickup_location,pv.weight,
@@ -4085,14 +4087,14 @@ function resize_review_images($image_data, $source_path, $id = false)
 
         $t = &get_instance();
 
-        $target_path = $source_path; // Target path will be under source path        
-        $image_name = $image_data['file_name']; // original image's name    
-        $w = $image_data['image_width']; // original image's width    
-        $h = $image_data['image_height']; // original images's height 
+        $target_path = $source_path; // Target path will be under source path
+        $image_name = $image_data['file_name']; // original image's name
+        $w = $image_data['image_width']; // original image's width
+        $h = $image_data['image_height']; // original images's height
 
         $t->load->library('image_lib');
 
-        if (file_exists($source_path . $image_name)) {  //check if the image file exist 
+        if (file_exists($source_path . $image_name)) {  //check if the image file exist
 
             if (!file_exists($target_path)) {
                 mkdir($target_path, 0777);
@@ -4799,7 +4801,7 @@ function process_refund($id, $status, $type = 'order_items')
         $payment_method = $order_details[0]['payment_method'];
 
 
-        //check for order active status 
+        //check for order active status
         $active_status = json_decode($order_item_details[0]['status'], true);
 
         if (trim(strtolower($payment_method)) != 'wallet') {
@@ -4874,12 +4876,12 @@ function process_refund($id, $status, $type = 'order_items')
                 /* if returnable_amount is 0 then don't change he wallet_balance */
                 $new_wallet_balance = ($returnable_amount > 0) ? (($wallet_balance <= $current_price) ? 0 : (($wallet_balance - $current_price > 0) ? $wallet_balance - $current_price : 0)) : $wallet_balance;
             }
-            /* if it is bank transfer and payment is already done by bank transfer 
+            /* if it is bank transfer and payment is already done by bank transfer
             same as condition : 2
             */
         }
 
-        /* if it is any other payment method or bank transfer with accepted receipts then payment is already done 
+        /* if it is any other payment method or bank transfer with accepted receipts then payment is already done
         condition : 2
         */
         if ((trim(strtolower($payment_method)) != 'cod' && $payment_method != 'Bank Transfer') || ($payment_method == 'Bank Transfer' && $bank_receipt_status == 2)) {
@@ -4936,7 +4938,7 @@ function process_refund($id, $status, $type = 'order_items')
             }
         }
 
-        // recalculate delivery charge and promocode for each seller 
+        // recalculate delivery charge and promocode for each seller
 
         $order_delivery_charge = fetch_details('order_charges', ['order_id' => $order_id, 'seller_id' => $seller_id], 'delivery_charge');
         $order_charges_data = fetch_details('order_charges', ['order_id' => $order_id, 'seller_id !=' => $seller_id], '*');
@@ -5180,14 +5182,14 @@ function recalculate_promo_discount($promo_code, $promo_discount, $user_id, $tot
                 $promo_code_discount = $promo_code['data'][0]['discount'];
             }
             if (trim(strtolower($payment_method)) != 'cod' && $payment_method != 'Bank Transfer') {
-                /* If any other payment methods are used like razorpay, paytm, flutterwave or stripe then 
+                /* If any other payment methods are used like razorpay, paytm, flutterwave or stripe then
                     obviously customer would have paid complete amount so making total_payable = 0*/
                 $total_payable = 0;
                 if ($promo_code_discount > $promo_code['data'][0]['max_discount_amount']) {
                     $promo_code_discount = $promo_code['data'][0]['max_discount_amount'];
                 }
             } else {
-                /* also check if the previous discount and recalculated discount are 
+                /* also check if the previous discount and recalculated discount are
                     different or not, then only modify total_payable*/
                 if ($promo_code_discount <= $promo_code['data'][0]['max_discount_amount'] && $promo_discount != $promo_code_discount) {
                     $total_payable = floatval($total) + $delivery_charge - $promo_code_discount - $wallet_balance;
@@ -5962,7 +5964,7 @@ function is_single_seller($product_variant_id, $user_id)
     if (isset($product_variant_id) && !empty($product_variant_id) && $product_variant_id != "" && isset($user_id) && !empty($user_id) && $user_id != "") {
         $pv_id = (strpos((string) $product_variant_id, ",")) ? explode(",", $product_variant_id) : $product_variant_id;
 
-        // get exist data from cart if any 
+        // get exist data from cart if any
         $exist_data = $t->db->select('c.product_variant_id,p.seller_id')
             ->join('product_variants pv ', 'pv.id=c.product_variant_id')
             ->join('products p ', 'pv.product_id=p.id')
@@ -6000,7 +6002,7 @@ function is_single_product_type($product_variant_id, $user_id)
     if (isset($product_variant_id) && !empty($product_variant_id) && $product_variant_id != "" && isset($user_id) && !empty($user_id) && $user_id != "") {
         $pv_id = (strpos($product_variant_id, ",")) ? explode(",", $product_variant_id) : $product_variant_id;
 
-        // get exist data from cart if any 
+        // get exist data from cart if any
         $exist_data = $t->db->select('c.product_variant_id,p.type')
             ->join('product_variants pv ', 'pv.id=c.product_variant_id')
             ->join('products p ', 'pv.product_id=p.id')
@@ -6081,7 +6083,7 @@ function get_shipment_id($item_id, $order_id)
 function make_shipping_parcels($data)
 {
     /**
-     * 
+     *
      */
     $parcels = array();
     foreach ($data as $product) {
@@ -6322,89 +6324,89 @@ function get_order_data($where = [], $first = false)
     $t = &get_instance();
 
     $settings_data = expoxable_settings();
-    $t->db->from('orders')->select("orders.id AS 'order.id', 
-                orders.user_id AS 'order.user_id', 
-                orders.address_id AS 'order.address_id', 
-                orders.mobile AS 'order.mobile', 
-                orders.total AS 'order.total', 
-                orders.delivery_charge AS 'order.delivery_charge', 
-                orders.is_delivery_charge_returnable AS 'order.is_delivery_charge_returnable', 
-                orders.wallet_balance AS 'order.wallet_balance', 
-                orders.promo_code AS 'order.promo_code', 
-                orders.promo_discount AS 'order.promo_discount', 
-                orders.discount AS 'order.discount', 
-                orders.total_payable AS 'order.total_payable', 
-                orders.payment_method AS 'order.payment_method', 
-                orders.latitude AS 'order.latitude', 
-                orders.longitude AS 'order.longitude', 
-                orders.address AS 'order.address', 
-                orders.delivery_time AS 'order.delivery_time', 
-                orders.delivery_date AS 'order.delivery_date', 
-                orders.date_added AS 'order.date_added', 
-                orders.otp AS 'order.otp', 
-                orders.notes AS 'order.notes', 
-                orders.attachments AS 'order.attachments', 
-                orders.is_pos_order AS 'order.is_pos_order', 
-                users.id AS 'user.id', 
-                users.ip_address AS 'user.ip_address', 
-                users.username AS 'user.username', 
-                users.email AS 'user.email', 
-                users.mobile AS 'user.mobile', 
-                users.image AS 'user.image', 
-                users.balance AS 'user.balance', 
-                users.active AS 'user.active', 
-                users.company AS 'user.company', 
-                users.address AS 'user.address', 
-                users.bonus_type AS 'user.bonus_type', 
-                users.bonus AS 'user.bonus', 
-                users.cash_received AS 'user.cash_received', 
-                users.dob AS 'user.dob', 
-                users.city AS 'user.city', 
-                users.area AS 'user.area', 
-                users.street AS 'user.street', 
-                users.pincode AS 'user.pincode', 
-                users.serviceable_zipcodes AS 'user.serviceable_zipcodes', 
-                users.fcm_id AS 'user.fcm_id', 
-                users.latitude AS 'user.latitude', 
-                users.longitude AS 'user.longitude', 
-                users.type AS 'user.type', 
-                users.driving_license AS 'user.driving_license', 
-                users.status AS 'user.status', 
-                users.web_fcm AS 'user.web_fcm', 
-                users.created_on AS 'user.created_on', 
-                addresses.id AS 'addresses.id', 
-                addresses.user_id AS 'addresses.user_id', 
-                addresses.name AS 'addresses.name', 
-                addresses.type AS 'addresses.type', 
-                addresses.mobile AS 'addresses.mobile', 
-                addresses.alternate_mobile AS 'addresses.alternate_mobile', 
-                addresses.address AS 'addresses.address', 
-                addresses.landmark AS 'addresses.landmark', 
-                addresses.area_id AS 'addresses.area_id', 
-                addresses.city_id AS 'addresses.city_id', 
-                addresses.city AS 'addresses.city', 
-                addresses.area AS 'addresses.area', 
-                addresses.pincode AS 'addresses.pincode', 
-                addresses.country_code AS 'addresses.country_code', 
-                addresses.state AS 'addresses.state', 
-                addresses.country AS 'addresses.country', 
-                addresses.latitude AS 'addresses.latitude', 
-                addresses.longitude AS 'addresses.longitude', 
+    $t->db->from('orders')->select("orders.id AS 'order.id',
+                orders.user_id AS 'order.user_id',
+                orders.address_id AS 'order.address_id',
+                orders.mobile AS 'order.mobile',
+                orders.total AS 'order.total',
+                orders.delivery_charge AS 'order.delivery_charge',
+                orders.is_delivery_charge_returnable AS 'order.is_delivery_charge_returnable',
+                orders.wallet_balance AS 'order.wallet_balance',
+                orders.promo_code AS 'order.promo_code',
+                orders.promo_discount AS 'order.promo_discount',
+                orders.discount AS 'order.discount',
+                orders.total_payable AS 'order.total_payable',
+                orders.payment_method AS 'order.payment_method',
+                orders.latitude AS 'order.latitude',
+                orders.longitude AS 'order.longitude',
+                orders.address AS 'order.address',
+                orders.delivery_time AS 'order.delivery_time',
+                orders.delivery_date AS 'order.delivery_date',
+                orders.date_added AS 'order.date_added',
+                orders.otp AS 'order.otp',
+                orders.notes AS 'order.notes',
+                orders.attachments AS 'order.attachments',
+                orders.is_pos_order AS 'order.is_pos_order',
+                users.id AS 'user.id',
+                users.ip_address AS 'user.ip_address',
+                users.username AS 'user.username',
+                users.email AS 'user.email',
+                users.mobile AS 'user.mobile',
+                users.image AS 'user.image',
+                users.balance AS 'user.balance',
+                users.active AS 'user.active',
+                users.company AS 'user.company',
+                users.address AS 'user.address',
+                users.bonus_type AS 'user.bonus_type',
+                users.bonus AS 'user.bonus',
+                users.cash_received AS 'user.cash_received',
+                users.dob AS 'user.dob',
+                users.city AS 'user.city',
+                users.area AS 'user.area',
+                users.street AS 'user.street',
+                users.pincode AS 'user.pincode',
+                users.serviceable_zipcodes AS 'user.serviceable_zipcodes',
+                users.fcm_id AS 'user.fcm_id',
+                users.latitude AS 'user.latitude',
+                users.longitude AS 'user.longitude',
+                users.type AS 'user.type',
+                users.driving_license AS 'user.driving_license',
+                users.status AS 'user.status',
+                users.web_fcm AS 'user.web_fcm',
+                users.created_on AS 'user.created_on',
+                addresses.id AS 'addresses.id',
+                addresses.user_id AS 'addresses.user_id',
+                addresses.name AS 'addresses.name',
+                addresses.type AS 'addresses.type',
+                addresses.mobile AS 'addresses.mobile',
+                addresses.alternate_mobile AS 'addresses.alternate_mobile',
+                addresses.address AS 'addresses.address',
+                addresses.landmark AS 'addresses.landmark',
+                addresses.area_id AS 'addresses.area_id',
+                addresses.city_id AS 'addresses.city_id',
+                addresses.city AS 'addresses.city',
+                addresses.area AS 'addresses.area',
+                addresses.pincode AS 'addresses.pincode',
+                addresses.country_code AS 'addresses.country_code',
+                addresses.state AS 'addresses.state',
+                addresses.country AS 'addresses.country',
+                addresses.latitude AS 'addresses.latitude',
+                addresses.longitude AS 'addresses.longitude',
                 addresses.is_default AS 'addresses.is_default',
                 transactions.id AS 'transactions.id',
-                transactions.transaction_type AS 'transactions.transaction_type', 
-                transactions.user_id AS 'transactions.user_id', 
-                transactions.order_id AS 'transactions.order_id', 
-                transactions.order_item_id AS 'transactions.order_item_id', 
-                transactions.type AS 'transactions.type', 
-                transactions.txn_id AS 'transactions.txn_id', 
-                transactions.payu_txn_id AS 'transactions.payu_txn_id', 
-                transactions.amount AS 'transactions.amount', 
-                transactions.status AS 'transactions.status', 
-                transactions.currency_code AS 'transactions.currency_code', 
-                transactions.payer_email AS 'transactions.payer_email', 
-                transactions.message AS 'transactions.message', 
-                transactions.transaction_date AS 'transactions.transaction_date', 
+                transactions.transaction_type AS 'transactions.transaction_type',
+                transactions.user_id AS 'transactions.user_id',
+                transactions.order_id AS 'transactions.order_id',
+                transactions.order_item_id AS 'transactions.order_item_id',
+                transactions.type AS 'transactions.type',
+                transactions.txn_id AS 'transactions.txn_id',
+                transactions.payu_txn_id AS 'transactions.payu_txn_id',
+                transactions.amount AS 'transactions.amount',
+                transactions.status AS 'transactions.status',
+                transactions.currency_code AS 'transactions.currency_code',
+                transactions.payer_email AS 'transactions.payer_email',
+                transactions.message AS 'transactions.message',
+                transactions.transaction_date AS 'transactions.transaction_date',
                 transactions.date_created AS 'transactions.date_created',
                 transactions.is_refund AS 'transactions.is_refund',
                 return_requests.id 'return_requests.id',
@@ -6521,13 +6523,13 @@ function get_statistics($product_varient_id)
 
     $query = $t->db->query('
     SELECT
-        (SELECT COUNT(id) FROM order_items 
-         WHERE product_variant_id = ? 
+        (SELECT COUNT(id) FROM order_items
+         WHERE product_variant_id = ?
          AND DATE(date_added) >= DATE(NOW()) - INTERVAL 31 DAY) AS total_ordered,
-        (SELECT COUNT(f.id) FROM favorites f 
-         LEFT JOIN product_variants pv ON f.product_id = pv.product_id 
+        (SELECT COUNT(f.id) FROM favorites f
+         LEFT JOIN product_variants pv ON f.product_id = pv.product_id
          WHERE pv.id = ?) AS total_favorites,
-        (SELECT COUNT(id) FROM cart 
+        (SELECT COUNT(id) FROM cart
          WHERE product_variant_id = ?) AS total_in_cart
 ', [$product_varient_id, $product_varient_id, $product_varient_id]);
 
@@ -7079,32 +7081,32 @@ function suggestionKeyword($input_keyword)
     SELECT `suggestion_keyword`
     FROM (
         (
-            SELECT TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p.tags, ',', numbers.n), ',', -1)) AS suggestion_keyword, 
-                   p.date_added 
+            SELECT TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p.tags, ',', numbers.n), ',', -1)) AS suggestion_keyword,
+                   p.date_added
             FROM (
-                SELECT 1 n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 
+                SELECT 1 n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
                 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10
             ) numbers
-            INNER JOIN products p 
-            ON CHAR_LENGTH(p.tags) - CHAR_LENGTH(REPLACE(p.tags, ',', '')) >= numbers.n - 1 
+            INNER JOIN products p
+            ON CHAR_LENGTH(p.tags) - CHAR_LENGTH(REPLACE(p.tags, ',', '')) >= numbers.n - 1
             WHERE TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(p.tags, ',', numbers.n), ',', -1)) LIKE '%$input_keyword%'
         )
         UNION
         (
-            SELECT c.name AS suggestion_keyword, p.date_added 
-            FROM products p 
-            JOIN categories c ON c.id = p.category_id 
+            SELECT c.name AS suggestion_keyword, p.date_added
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
             WHERE c.name LIKE '%$input_keyword%'
         )
         UNION
         (
-            SELECT p.brand AS suggestion_keyword, p.date_added 
-            FROM products p 
+            SELECT p.brand AS suggestion_keyword, p.date_added
+            FROM products p
                 WHERE p.brand LIKE '%$input_keyword%'
             )
         ) AS suggestions
-        GROUP BY `suggestion_keyword` 
-        ORDER BY `date_added` DESC, `suggestion_keyword` ASC 
+        GROUP BY `suggestion_keyword`
+        ORDER BY `date_added` DESC, `suggestion_keyword` ASC
         LIMIT 8
     ");
 
@@ -7409,7 +7411,7 @@ function generate_unique_affiliate_uuid($user_id = null)
 
 /**
  * Update affiliate wallet balance and log transaction
- * 
+ *
  * @param string $type - "credit" or "debit"
  * @param int $user_id - Affiliate user ID
  * @param float $amount - Amount to update
