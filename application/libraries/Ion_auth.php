@@ -453,6 +453,10 @@ class Ion_auth
 		return $this->ion_auth_model->in_group('affiliate', $id);
 	}
 
+	public function is_shipping_company($id = FALSE)
+	{
+		return $this->ion_auth_modal->in_group('shipping_company', $id);
+	}
 
 	/**
 	 * Check the compatibility with the server

@@ -10,6 +10,7 @@ class Shipping_companies extends CI_Controller
         parent::__construct();
         $this->load->database();
         $this->load->library(['ion_auth', 'form_validation', 'upload']);
+        // add function_helper (or the specific helper file that contains get_settings, fetch_details etc.)
         $this->load->helper(['url', 'language', 'file', 'function_helper']);
         $this->load->model('Shipping_company_model');
         if (!has_permissions('read', 'shipping_company')) {
@@ -18,35 +19,48 @@ class Shipping_companies extends CI_Controller
         }
     }
 
+
     public function index()
     {
-        try {
+
+
+        try{
+
             if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
                 $this->data['main_page'] = FORMS . 'shipping-company';
+
+                // Add this debug
+                log_message('error', 'Edit ID: ' . $this->input->get('edit_id'));
+
 
                 $settings = get_settings('system_settings', true);
                 $this->data['title'] = 'Add Shipping Company | ' . $settings['app_name'];
                 $this->data['meta_description'] = 'Add Shipping Company  | ' . $settings['app_name'];
-
                 if (isset($_GET['edit_id']) && !empty($_GET['edit_id'])) {
-                    $this->data['fetched_data'] = $this->db->select('u.*')
-                        ->join('users_groups ug', 'ug.user_id = u.id')
+                    $this->data['fetched_data'] = $this->db->select(' u.* ')
+                        ->join('users_groups ug', ' ug.user_id = u.id ')
                         ->where(['ug.group_id' => '6', 'ug.user_id' => $_GET['edit_id']])
                         ->get('users u')
                         ->result_array();
                 }
-
+                $this->data['shipping_method'] = get_settings('shipping_method', true);
                 $this->data['system_settings'] = get_settings('system_settings', true);
+                $this->data['cities'] = fetch_details('cities', "", 'name,id');
 
                 $this->load->view('admin/template', $this->data);
             } else {
                 redirect('admin/login', 'refresh');
             }
         } catch (Exception $e) {
+
+            print_r($e);
             log_message('error', 'Error in shipping_companies index: ' . $e->getMessage());
             show_error($e->getMessage());
         }
+
     }
+
+
 
     public function manage_shipping_company()
     {
@@ -54,7 +68,7 @@ class Shipping_companies extends CI_Controller
             $this->data['main_page'] = TABLES . 'manage-shipping-company';
             $settings = get_settings('system_settings', true);
             $this->data['title'] = 'Shipping Company Management | ' . $settings['app_name'];
-            $this->data['meta_description'] = 'Shipping Company Management | ' . $settings['app_name'];
+            $this->data['meta_description'] = ' Shipping Company Management  | ' . $settings['app_name'];
             $this->load->view('admin/template', $this->data);
         } else {
             redirect('admin/login', 'refresh');
@@ -80,21 +94,20 @@ class Shipping_companies extends CI_Controller
             if (print_msg(!has_permissions('delete', 'shipping_company'), PERMISSION_ERROR_MSG, 'shipping_company', false)) {
                 return true;
             }
-
             if (defined('SEMI_DEMO_MODE') && SEMI_DEMO_MODE == 0) {
                 $this->response['error'] = true;
                 $this->response['message'] = SEMI_DEMO_MODE_MSG;
                 echo json_encode($this->response);
                 return false;
+                exit();
             }
-
             if (!isset($_GET['id']) && empty($_GET['id'])) {
                 $this->response['error'] = true;
                 $this->response['message'] = 'Shipping company id is required';
                 print_r(json_encode($this->response));
                 return;
+                exit();
             }
-
             $company_id = $this->input->get('id', true);
 
             // Check if shipping company has active quotes or orders
@@ -105,6 +118,7 @@ class Shipping_companies extends CI_Controller
                 $this->response['message'] = 'You cannot delete shipping company with active quotes. Please deactivate all quotes first.';
                 print_r(json_encode($this->response));
                 return;
+                exit();
             }
 
             if (delete_details(['user_id' => $_GET['id']], 'users_groups')) {
@@ -124,6 +138,7 @@ class Shipping_companies extends CI_Controller
         }
     }
 
+
     public function add_shipping_company()
     {
         if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
@@ -142,14 +157,19 @@ class Shipping_companies extends CI_Controller
             $this->form_validation->set_rules('email', 'Mail', 'trim|required|xss_clean|valid_email');
             $this->form_validation->set_rules('mobile', 'Mobile', 'trim|required|xss_clean|min_length[5]|max_length[16]');
             $this->form_validation->set_rules('status', 'Status', 'trim|required|xss_clean');
-            $this->form_validation->set_rules('address', 'Address', 'trim|required|xss_clean');
-
-            // Zipcode is always required for shipping companies
-            $this->form_validation->set_rules('assign_zipcode[]', 'Assigned Zipcodes', 'trim|required|xss_clean');
 
             if (!isset($_POST['edit_shipping_company'])) {
                 $this->form_validation->set_rules('password', 'Password', 'trim|required|xss_clean');
                 $this->form_validation->set_rules('confirm_password', 'Confirm password', 'trim|required|matches[password]|xss_clean');
+            }
+
+            $this->form_validation->set_rules('address', 'Address', 'trim|required|xss_clean');
+
+            if (isset($_POST['pincode_wise_deliverability']) && !empty($_POST['pincode_wise_deliverability']) && ($_POST['pincode_wise_deliverability'] == 1)) {
+                $this->form_validation->set_rules('serviceable_zipcodes[]', 'Serviceable Zipcodes', 'trim|required|xss_clean');
+            }
+            if (isset($_POST['city_wise_deliverability']) && !empty($_POST['city_wise_deliverability']) && ($_POST['city_wise_deliverability'] == 1)) {
+                $this->form_validation->set_rules('serviceable_cities[]', 'Serviceable Cities', 'trim|required|xss_clean');
             }
 
             // KYC document validation
@@ -185,7 +205,7 @@ class Shipping_companies extends CI_Controller
                 $images_info_error = "";
                 $allowed_media_types = implode('|', allowed_media_types());
                 $config = [
-                    'upload_path' => FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH,
+                    'upload_path' =>  FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH,
                     'allowed_types' => $allowed_media_types,
                     'max_size' => 8000,
                 ];
@@ -236,15 +256,15 @@ class Shipping_companies extends CI_Controller
 
                 if ($images_info_error != NULL) {
                     $this->response['error'] = true;
-                    $this->response['message'] = $images_info_error;
+                    $this->response['message'] =  $images_info_error;
                     print_r(json_encode($this->response));
                     return false;
                 }
 
                 if (isset($_POST['edit_shipping_company'])) {
                     if (!edit_unique($this->input->post('email', true), 'users.email.' . $this->input->post('edit_shipping_company', true) . '') || !edit_unique($this->input->post('mobile', true), 'users.mobile.' . $this->input->post('edit_shipping_company', true) . '')) {
-                        $response["error"] = true;
-                        $response["message"] = "Email or mobile already exists!";
+                        $response["error"]   = true;
+                        $response["message"] = "Email or mobile already exists !";
                         $response['csrfName'] = $this->security->get_csrf_token_name();
                         $response['csrfHash'] = $this->security->get_csrf_hash();
                         $response["data"] = array();
@@ -252,22 +272,26 @@ class Shipping_companies extends CI_Controller
                         return false;
                     }
 
-                    $assign_zipcode = isset($_POST['assign_zipcode']) && !empty($_POST['assign_zipcode'])
-                        ? implode(",", $this->input->post('assign_zipcode', true))
-                        : NULL;
+                    if (isset($_POST['serviceable_zipcodes']) && !empty($_POST['serviceable_zipcodes'])) {
+                        $serviceable_zipcodes = implode(",", $this->input->post('serviceable_zipcodes', true));
+                    } else {
+                        $serviceable_zipcodes = NULL;
+                    }
+
+                    if (isset($_POST['serviceable_cities']) && !empty($_POST['serviceable_cities'])) {
+                        $serviceable_cities = implode(",", $this->input->post('serviceable_cities', true));
+                    } else {
+                        $serviceable_cities = NULL;
+                    }
 
                     $_POST['status'] = $this->input->post('status', true);
-                    $_POST['assign_zipcode'] = $assign_zipcode;
-                    $_POST['kyc_documents'] = isset($images_new_name_arr) && !empty($images_new_name_arr)
-                        ? implode(',', (array)$images_new_name_arr)
-                        : (isset($company_data[0]['kyc_documents']) ? $company_data[0]['kyc_documents'] : '');
+                    $_POST['serviceable_zipcodes'] = $serviceable_zipcodes;
+                    $_POST['serviceable_cities'] = $serviceable_cities;
+                    $_POST['kyc_documents'] = isset($images_new_name_arr) && !empty($images_new_name_arr) ? implode(',', (array)$images_new_name_arr) : (isset($company_data[0]['kyc_documents']) ? $company_data[0]['kyc_documents'] : '');
 
                     $email_settings = get_settings('email_settings', true);
 
-
                     $this->Shipping_company_model->update_shipping_company($_POST);
-
-
 
                     if (!empty($_POST['edit_shipping_company']) && $_POST['status'] == 1) {
                         if (isset($email_settings) && !empty($email_settings)) {
@@ -280,13 +304,13 @@ class Shipping_companies extends CI_Controller
                                 'email' => $company[0]['email'],
                                 'message' => $mail_admin_msg
                             );
-                            send_mail($company[0]['email'], $title, $this->load->view('admin/pages/view/contact-email-template', $email_message, TRUE));
+                            send_mail($company[0]['email'],  $title, $this->load->view('admin/pages/view/contact-email-template', $email_message, TRUE));
                         }
                     }
                 } else {
                     if (!$this->form_validation->is_unique($_POST['mobile'], 'users.mobile') || !$this->form_validation->is_unique($_POST['email'], 'users.email')) {
-                        $response["error"] = true;
-                        $response["message"] = "Email or mobile already exists!";
+                        $response["error"]   = true;
+                        $response["message"] = "Email or mobile already exists !";
                         $response['csrfName'] = $this->security->get_csrf_token_name();
                         $response['csrfHash'] = $this->security->get_csrf_hash();
                         $response["data"] = array();
@@ -300,70 +324,31 @@ class Shipping_companies extends CI_Controller
                     $identity = ($identity_column == 'mobile') ? $mobile : $email;
                     $password = $this->input->post('password');
 
-                    $assign_zipcode = isset($_POST['assign_zipcode']) && !empty($_POST['assign_zipcode'])
-                        ? implode(",", $this->input->post('assign_zipcode', true))
-                        : NULL;
+                    if (isset($_POST['serviceable_zipcodes']) && !empty($_POST['serviceable_zipcodes'])) {
+                        $serviceable_zipcodes = implode(",", $this->input->post('serviceable_zipcodes', true));
+                    } else {
+                        $serviceable_zipcodes = NULL;
+                    }
+
+                    if (isset($_POST['serviceable_cities']) && !empty($_POST['serviceable_cities'])) {
+                        $serviceable_cities = implode(",", $this->input->post('serviceable_cities', true));
+                    } else {
+                        $serviceable_cities = NULL;
+                    }
 
                     $additional_data = [
                         'username' => $this->input->post('company_name'),
                         'address' => $this->input->post('address'),
-                        'serviceable_zipcodes' => $assign_zipcode,
+                        'serviceable_zipcodes' => $serviceable_zipcodes,
+                        'serviceable_cities' => $serviceable_cities,
                         'type' => 'phone',
                         'kyc_documents' => implode(',', $images_new_name_arr),
                         'status' => $this->input->post('status', true),
                         'is_shipping_company' => 1,
                     ];
 
-                    // $this->ion_auth->register($identity, $password, $email, $additional_data, ['6']);
-                    // update_details(['active' => 1], [$identity_column => $identity], 'users');
-
-
-                    // will implement forgot password later when creating shipping panel
-                    // register user
-                    $register_id = $this->ion_auth->register($identity, $password, $email, $additional_data, ['6']);
-
-                    // if registration successful
-                    if ($register_id) {
-                        // activate user right away (as you were doing)
-                        update_details(['active' => 1], [$identity_column => $identity], 'users');
-
-                        // fetch the created company user (you use fetch_details elsewhere)
-                        $company = fetch_details('users', ['id' => $register_id]);
-
-                        // prepare email content — include credentials (temporary approach)
-                        $settings = get_settings('system_settings', true);
-                        $app_name = isset($settings['app_name']) ? $settings['app_name'] : 'Your App';
-                        $company_name = $this->input->post('company_name', true);
-
-                        $title = 'Your Shipping Company Account on ' . $app_name;
-                        $mail_admin_msg  = '<p>Dear <b>' . htmlspecialchars($company_name) . '</b>,</p>';
-                        $mail_admin_msg .= '<p>Your shipping company account has been created on <b>' . htmlspecialchars($app_name) . '</b>.</p>';
-                        $mail_admin_msg .= '<p><strong>Login email:</strong> ' . htmlspecialchars($email) . '</p>';
-                        // include password — temporary; replace later with reset link
-                        $mail_admin_msg .= '<p><strong>Password:</strong> ' . htmlspecialchars($password) . '</p>';
-
-                        // login URL
-                        $login_url = base_url('admin/login'); // adjust if shipping companies use another login URL
-                        $mail_admin_msg .= '<p>You can login here: <a href="' . $login_url . '">' . $login_url . '</a></p>';
-
-                        // optional: mention forgot/reset flow will be available later
-                        $mail_admin_msg .= '<p><small>Note: For security, we recommend changing your password after first login. A password reset link feature will be sent in future emails.</small></p>';
-
-                        $email_message = array(
-                            'username' => 'Hello, Dear <b>' . ucfirst($company_name) . '</b>, ',
-                            'subject' => $title,
-                            'email' => $email,
-                            'message' => $mail_admin_msg
-                        );
-
-                        // send email (uses your existing helper)
-                        $send_result = send_mail($email, $title, $this->load->view('admin/pages/view/contact-email-template', $email_message, TRUE));
-
-                        // optional: log if email failed — useful for debugging in dev
-                        if (isset($send_result['error']) && $send_result['error'] === true) {
-                            log_message('error', 'Shipping company creation: email send failed for user_id ' . $register_id . '. Debug: ' . print_r($send_result, true));
-                        }
-                    }
+                    $this->ion_auth->register($identity, $password, $email, $additional_data, ['6']);
+                    update_details(['active' => 1], [$identity_column => $identity], 'users');
                 }
 
                 $this->response['error'] = false;
@@ -378,9 +363,6 @@ class Shipping_companies extends CI_Controller
         }
     }
 
-
-    // Cash Collection
-
     public function manage_cash()
     {
         if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
@@ -389,7 +371,7 @@ class Shipping_companies extends CI_Controller
             $this->data['curreny'] = $settings['currency'];
             $this->data['shipping_companies'] = $this->db->where(['ug.group_id' => '6', 'u.active' => 1])->join('users_groups ug', 'ug.user_id = u.id')->get('users u')->result_array();
             $this->data['title'] = 'View Cash Collection | ' . $settings['app_name'];
-            $this->data['meta_description'] = 'View Cash Collection | ' . $settings['app_name'];
+            $this->data['meta_description'] = ' View Cash Collection  | ' . $settings['app_name'];
             $this->load->view('admin/template', $this->data);
         } else {
             redirect('admin/login', 'refresh');
@@ -483,140 +465,6 @@ class Shipping_companies extends CI_Controller
             }
         } else {
             redirect('admin/login', 'refresh');
-        }
-    }
-
-    // Fund transfer
-
-    public function fund_transfer()
-    {
-        if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
-            $this->data['main_page'] = TABLES . 'shipping-company-fund-transfers';
-            $settings = get_settings('system_settings', true);
-            // print_r($settings);
-            // die();
-            $this->data['title'] = 'View Shipping Company Fund Transfers | ' . $settings['app_name'];
-            $this->data['meta_description'] = 'View Shipping Company Fund Transfers | ' . $settings['app_name'];
-            $this->load->view('admin/template', $this->data);
-        } else {
-            redirect('admin/login', 'refresh');
-        }
-    }
-
-    public function view_fund_transfers()
-    {
-        if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
-            return $this->Shipping_company_model->get_fund_transfers_list();
-        } else {
-            redirect('admin/login', 'refresh');
-        }
-    }
-
-    public function add_fund_transfer()
-    {
-        if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
-            if (print_msg(!has_permissions('create', 'fund_transfer'), PERMISSION_ERROR_MSG, 'fund_transfer')) {
-                return false;
-            }
-
-            $this->form_validation->set_rules('shipping_company_id', 'Shipping Company', 'trim|required|xss_clean|numeric');
-            $this->form_validation->set_rules('amount', 'Amount', 'trim|required|xss_clean|numeric|greater_than[0]');
-            $this->form_validation->set_rules('date', 'Date', 'trim|required|xss_clean');
-            $this->form_validation->set_rules('message', 'Message', 'trim|xss_clean');
-            $this->form_validation->set_rules('type', 'Type', 'trim|required|xss_clean|in_list[credit,debit]');
-
-            if (!$this->form_validation->run()) {
-                $this->response['error'] = true;
-                $this->response['csrfName'] = $this->security->get_csrf_token_name();
-                $this->response['csrfHash'] = $this->security->get_csrf_hash();
-                $this->response['message'] = validation_errors();
-                echo json_encode($this->response);
-                return false;
-            } else {
-                $company_id = $this->input->post('shipping_company_id', true);
-
-                if (!is_exist(['id' => $company_id], 'users')) {
-                    $this->response['error'] = true;
-                    $this->response['message'] = 'Shipping Company does not exist in your database';
-                    $this->response['csrfName'] = $this->security->get_csrf_token_name();
-                    $this->response['csrfHash'] = $this->security->get_csrf_hash();
-                    print_r(json_encode($this->response));
-                    return false;
-                }
-
-                $res = fetch_details('users', ['id' => $company_id], 'balance');
-                $amount = $this->input->post('amount', true);
-                $date = $this->input->post('date', true);
-                $type = $this->input->post('type', true);
-                $message = (isset($_POST['message']) && !empty($_POST['message']))
-                    ? $this->input->post('message', true)
-                    : "Fund transfer by admin";
-
-                if ($type == 'debit' && $res[0]['balance'] < $amount) {
-                    $this->response['error'] = true;
-                    $this->response['csrfName'] = $this->security->get_csrf_token_name();
-                    $this->response['csrfHash'] = $this->security->get_csrf_hash();
-                    $this->response['message'] = 'Insufficient balance for debit transaction';
-                    echo json_encode($this->response);
-                    return false;
-                }
-
-                $this->load->model("Shipping_company_model");
-                $action = ($type == 'credit') ? 'add' : 'deduct';
-                $this->Shipping_company_model->update_balance($amount, $company_id, $action);
-
-                $this->load->model("transaction_model");
-                $transaction_data = [
-                    'transaction_type' => "transaction",
-                    'user_id' => $company_id,
-                    'order_id' => '',
-                    'type' => $type,
-                    'txn_id' => "",
-                    'amount' => $amount,
-                    'status' => "success",
-                    'message' => $message,
-                    'transaction_date' => $date,
-                ];
-                $this->transaction_model->add_transaction($transaction_data);
-
-                $this->response['error'] = false;
-                $this->response['csrfName'] = $this->security->get_csrf_token_name();
-                $this->response['csrfHash'] = $this->security->get_csrf_hash();
-                $this->response['message'] = 'Fund Transfer Successful';
-
-                echo json_encode($this->response);
-                return false;
-            }
-        } else {
-            redirect('admin/login', 'refresh');
-        }
-    }
-
-
-
-
-    // AJAX endpoint to get zipcodes filtered by provider_type = 'company'
-    public function get_company_zipcodes()
-    {
-        if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
-            $search = $this->input->get('search', true);
-
-            $this->db->select('id, zipcode');
-            $this->db->from('zipcodes');
-            $this->db->where('provider_type', 'company');
-
-            if (!empty($search)) {
-                $this->db->like('zipcode', $search);
-            }
-
-            $this->db->order_by('zipcode', 'ASC');
-            $this->db->limit(50);
-
-            $zipcodes = $this->db->get()->result_array();
-
-            echo json_encode($zipcodes);
-        } else {
-            echo json_encode([]);
         }
     }
 }

@@ -42,6 +42,8 @@ class Login extends CI_Controller
 
     public function sign_up()
     {
+
+
         $this->data['main_page'] = FORMS . 'delivery_boy-registration';
         $settings = get_settings('system_settings', true);
         $this->data['title'] = 'Sign Up Delivery | ' . $settings['app_name'];
@@ -262,13 +264,13 @@ class Login extends CI_Controller
                     send_mail($delivery_boy_id[0]['email'],  $title, $this->load->view('admin/pages/view/contact-email-template', $email_message, TRUE));
 
 
-                    //send mail to admin 
+                    //send mail to admin
                     $user_group = fetch_details('users_groups', ['group_id' => 1], '*');
                     $admin_id = fetch_details('users', ['id' => $user_group[0]['user_id']], 'email,username');
 
                     if (!empty($admin_id[0]['email'])) {
-                        $title = "Delivery Boy registered Successfully in your plateform Please check";
-                        $mail_admin_msg = 'Congratulations , We hope this message finds you well. We are writing to inform you about the registrer of delivery boy account on your platform.Please be aware that this action is not reversible, Please conect with us.';
+                        $title = "Delivery Boy registeredlat Successfully in your plateform Please check";
+                        $mail_admin_msg = 'Congratuions , We hope this message finds you well. We are writing to inform you about the registrer of delivery boy account on your platform.Please be aware that this action is not reversible, Please conect with us.';
                         $email_message = array(
                             'username' => 'Hello, Dear <b>' . ucfirst($admin_id[0]['username']) . '</b>, ',
                             'subject' => $title,
@@ -316,7 +318,7 @@ class Login extends CI_Controller
             $this->form_validation->set_rules('old', $this->lang->line('change_password_validation_old_password_label'), 'required|xss_clean');
             $this->form_validation->set_rules('new', $this->lang->line('change_password_validation_new_password_label'), 'required|xss_clean|min_length[' . $this->config->item('min_password_length', 'ion_auth') . ']|matches[new_confirm]');
             $this->form_validation->set_rules('new_confirm', $this->lang->line('change_password_validation_new_password_confirm_label'), 'required|xss_clean');
-            
+
             if (!preg_match($regex_password, $_POST['new'])) {
                 $this->response['error'] = true;
                 $this->response['csrfName'] = $this->security->get_csrf_token_name();

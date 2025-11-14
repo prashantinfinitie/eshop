@@ -71,9 +71,18 @@ $route['default_controller'] = 'home';
 $route['404_override'] = 'error_404';
 $route['sitemap.xml'] = 'sitemap/index';
 
-// Add routes for Shipping Companies
+// Add routes for Shipping Companies(Admin)
 $route['admin/shipping-companies'] = 'admin/Shipping_companies';
 $route['admin/shipping-companies/(:any)'] = 'admin/Shipping_companies/$1';
 $route['admin/shipping-companies/(:any)/(:any)'] = 'admin/Shipping_companies/$1/$2';
+
+// Shipping Company Routes
+$route['shipping-company'] = "shipping_company/home";
+$route['shipping-company'] = "shipping_company/home";
+$route['shipping-company/(:any)'] = "shipping_company/$1";
+$route['shipping-company/(:any)/(:any)'] = "shipping_company/$1/$2";
+$route['shipping-company/(:any)/(:any)/(:any)'] = "shipping_company/$1/$2/$3";
+$route['shipping-company/(:any)/(:any)/(:any)/(:any)'] = "shipping_company/$1/$2/$3/$4";
+$route['shipping-company/(:any)/(:any)/(:any)/(:any)/(:any)'] = "shipping_company/$1/$2/$3/$4/$5";
 
 $route['translate_uri_dashes'] = TRUE;

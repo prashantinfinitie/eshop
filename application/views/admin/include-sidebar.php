@@ -575,7 +575,7 @@ if ($authentication_settings !== null && is_string($authentication_settings)) {
                 <?php if (has_permissions('read', 'shipping_company') || has_permissions('read', 'fund_transfer')) { ?>
                     <li class="nav-item has-treeview">
                         <a href="#" class="nav-link">
-                            <i class="nav-icon fas fa-id-card-alt text-info"></i>
+                            <i class="nav-icon fas fa-shipping-fast text-info"></i>
                             <p>
                                 Shipping Company
                                 <i class="fas fa-angle-left right"></i>
