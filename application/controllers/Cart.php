@@ -491,7 +491,7 @@ class Cart extends CI_Controller
             is_wallet_used:1 {By default 0}
             wallet_balance_used:1
             active_status:awaiting {optional}
-      
+
         */
             // total:60.0
             // delivery_charge:20.0
@@ -518,10 +518,16 @@ class Cart extends CI_Controller
             $this->form_validation->set_rules('promo_code', 'Promo Code', 'trim|xss_clean');
             $this->form_validation->set_rules('order_note', 'Special Note', 'trim|xss_clean');
 
+
+            // Add after existing form validation rules (around line 850)
+            if (isset($_POST['provider_type']) && $_POST['provider_type'] === 'company') {
+                $this->form_validation->set_rules('selected_quote_id', 'Shipping Quote', 'trim|required|numeric|xss_clean');
+                $this->form_validation->set_rules('shipping_company_id', 'Shipping Company', 'trim|required|numeric|xss_clean');
+            }
             /*
-        ------------------------------
-        If Wallet Balance Is Used
-        ------------------------------
+            ------------------------------
+            If Wallet Balance Is Used
+            ------------------------------
         */
 
             $this->form_validation->set_rules('latitude', 'Latitude', 'trim|numeric|xss_clean');
@@ -663,7 +669,7 @@ class Cart extends CI_Controller
                     return;
                 }
 
-                //checking for product availability 
+                //checking for product availability
                 if (isset($_POST['product_type']) && $_POST['product_type'] != 'digital_product') {
 
                     $area_id = fetch_details('addresses', ['id' => $_POST['address_id']], ['area_id', 'area', 'pincode', 'city', 'city_id']);
@@ -960,8 +966,26 @@ class Cart extends CI_Controller
                 $delivery_type = $response_array['availability_data'][0]['delivery_by'];
 
                 $_POST['is_shiprocket_order'] = (isset($response_array['availability_data']) && !empty($response_array['availability_data']) && $delivery_type == 'standard_shipping') ? '1' : '0';
-                // print_r($_POST);
 
+                // Add shipping company data BEFORE placing order
+                if (
+                    isset($_POST['provider_type']) && $_POST['provider_type'] === 'company' &&
+                    isset($_POST['selected_quote_id']) && !empty($_POST['selected_quote_id'])
+                ) {
+                    // Fetch the selected quote for snapshot
+                    $this->load->model('Shipping_company_quotes_model');
+                    $quote = $this->db->where('id', $_POST['selected_quote_id'])
+                        ->get('shipping_company_quotes')
+                        ->row_array();
+
+                    if (!empty($quote)) {
+                        $_POST['selected_quote_id'] = $_POST['selected_quote_id'];
+                        $_POST['shipping_company_id'] = $_POST['shipping_company_id'];
+                        $_POST['shipping_quote_snapshot'] = json_encode($quote);
+                    }
+                }
+
+                // NOW place the order with all data
                 $res = $this->order_model->place_order($_POST);
 
                 if (isset($res["error"]) && $res["error"]) {
@@ -983,7 +1007,7 @@ class Cart extends CI_Controller
                 $data['type'] = $_POST['payment_method'];
                 $data['amount'] = $order[0]['final_total'];
                 $res['final_total'] = $order[0]['final_total'];
-                
+
                 if (($_POST['payment_method'] != "Paypal") ||  $_POST['payment_method'] == "bank_transfer") {
                     $this->transaction_model->add_transaction($data);
                 }
@@ -1322,6 +1346,99 @@ class Cart extends CI_Controller
             $this->response['message'] = "Please select address.";
         }
 
+        print_r(json_encode($this->response));
+    }
+
+
+    public function get_shipping_company_quotes()
+    {
+        if (!$this->data['is_logged_in']) {
+            $this->response['error'] = true;
+            $this->response['message'] = "Please login first.";
+            $this->response['csrfName'] = $this->security->get_csrf_token_name();
+            $this->response['csrfHash'] = $this->security->get_csrf_hash();
+            print_r(json_encode($this->response));
+            return;
+        }
+
+        $this->form_validation->set_rules('address_id', 'Address', 'trim|required|numeric|xss_clean');
+
+        if (!$this->form_validation->run()) {
+            $this->response['error'] = true;
+            $this->response['message'] = validation_errors();
+            $this->response['csrfName'] = $this->security->get_csrf_token_name();
+            $this->response['csrfHash'] = $this->security->get_csrf_hash();
+            print_r(json_encode($this->response));
+            return;
+        }
+
+        $address_id = $this->input->post('address_id', true);
+
+        // Get zipcode from address
+        $address_data = fetch_details('addresses', ['id' => $address_id], 'pincode');
+
+        if (empty($address_data)) {
+            $this->response['error'] = true;
+            $this->response['message'] = "Invalid address.";
+            $this->response['csrfName'] = $this->security->get_csrf_token_name();
+            $this->response['csrfHash'] = $this->security->get_csrf_hash();
+            print_r(json_encode($this->response));
+            return;
+        }
+
+        $zipcode = $address_data[0]['pincode'];
+
+        // Check zipcode provider_type
+        $zipcode_data = fetch_details('zipcodes', ['zipcode' => $zipcode], 'id,provider_type');
+
+        if (empty($zipcode_data)) {
+            $this->response['error'] = true;
+            $this->response['message'] = "Delivery not available for this zipcode.";
+            $this->response['delivery_available'] = false;
+            $this->response['csrfName'] = $this->security->get_csrf_token_name();
+            $this->response['csrfHash'] = $this->security->get_csrf_hash();
+            print_r(json_encode($this->response));
+            return;
+        }
+
+        $provider_type = $zipcode_data[0]['provider_type'];
+
+        // If provider_type is 'company', fetch quotes
+        if ($provider_type === 'company') {
+            $this->load->model('Shipping_company_quotes_model');
+            $quotes = $this->Shipping_company_quotes_model->get_active_quotes_by_zipcode($zipcode);
+
+            if (empty($quotes)) {
+                $this->response['error'] = true;
+                $this->response['message'] = "No shipping quotes available for this zipcode.";
+                $this->response['delivery_available'] = false;
+                $this->response['provider_type'] = 'company';
+                $this->response['csrfName'] = $this->security->get_csrf_token_name();
+                $this->response['csrfHash'] = $this->security->get_csrf_hash();
+                print_r(json_encode($this->response));
+                return;
+            }
+
+            $this->response['error'] = false;
+            $this->response['provider_type'] = 'company';
+            $this->response['delivery_available'] = true;
+            $this->response['quotes'] = $quotes;
+            $this->response['message'] = "Shipping quotes retrieved successfully.";
+        } elseif ($provider_type === 'delivery_boy') {
+            // Use existing delivery boy flow
+            $this->response['error'] = false;
+            $this->response['provider_type'] = 'delivery_boy';
+            $this->response['delivery_available'] = true;
+            $this->response['message'] = "Using standard delivery.";
+        } else {
+            // No provider assigned
+            $this->response['error'] = true;
+            $this->response['message'] = "Delivery not available for this zipcode.";
+            $this->response['delivery_available'] = false;
+        }
+
+        $this->response['csrfName'] = $this->security->get_csrf_token_name();
+        $this->response['csrfHash'] = $this->security->get_csrf_hash();
         print_r(json_encode($this->response));
     }
 

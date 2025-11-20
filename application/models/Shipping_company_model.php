@@ -13,18 +13,64 @@ class Shipping_company_model extends CI_Model
 
     function update_shipping_company($data)
     {
+        // sanitize input (you already do this with escape_array above; keep it)
         $data = escape_array($data);
+        // prefer 'serviceable_zipcodes' (controller sets this), fallback to 'assign_zipcode'
+        $zipcodes = NULL;
+        if (isset($data['serviceable_zipcodes']) && $data['serviceable_zipcodes'] !== '') {
+            // could be array or comma string
+            if (is_array($data['serviceable_zipcodes'])) {
+                $zipcodes = implode(',', $data['serviceable_zipcodes']);
+            } else {
+                $zipcodes = $data['serviceable_zipcodes'];
+            }
+        } elseif (isset($data['assign_zipcode']) && $data['assign_zipcode'] !== '') {
+            if (is_array($data['assign_zipcode'])) {
+                $zipcodes = implode(',', $data['assign_zipcode']);
+            } else {
+                $zipcodes = $data['assign_zipcode'];
+            }
+        } else {
+            $zipcodes = NULL;
+        }
+
+        // same for cities if you store them
+        $cities = NULL;
+        if (isset($data['serviceable_cities']) && $data['serviceable_cities'] !== '') {
+            if (is_array($data['serviceable_cities'])) {
+                $cities = implode(',', $data['serviceable_cities']);
+            } else {
+                $cities = $data['serviceable_cities'];
+            }
+        }
+
         $company_data = [
-            'username' => $data['company_name'],
-            'email' => $data['email'],
-            'mobile' => $data['mobile'],
-            'address' => $data['address'],
-            'serviceable_zipcodes' => $data['assign_zipcode'],
-            'kyc_documents' => $data['kyc_documents'],
-            'status' => $data['status'],
+            'username' => isset($data['company_name']) ? $data['company_name'] : NULL,
+            'email' => isset($data['email']) ? $data['email'] : NULL,
+            'mobile' => isset($data['mobile']) ? $data['mobile'] : NULL,
+            'address' => isset($data['address']) ? $data['address'] : NULL,
+            'serviceable_zipcodes' => $zipcodes,
+            'serviceable_cities' => $cities,
+            'kyc_documents' => isset($data['kyc_documents']) ? $data['kyc_documents'] : NULL,
+            'status' => isset($data['status']) ? $data['status'] : NULL,
         ];
-        $this->db->set($company_data)->where('id', $data['edit_shipping_company'])->update('users');
+
+        // remove keys with NULL if you don't want them to overwrite existing DB values
+        foreach ($company_data as $k => $v) {
+            if ($v === NULL) {
+                unset($company_data[$k]);
+            }
+        }
+
+        // update
+        if (isset($data['edit_shipping_company']) && !empty($data['edit_shipping_company'])) {
+            $this->db->set($company_data)->where('id', $data['edit_shipping_company'])->update('users');
+            return $this->db->affected_rows() !== 0;
+        }
+
+        return false;
     }
+
 
     function get_shipping_companies_list($get_company_status = "")
     {

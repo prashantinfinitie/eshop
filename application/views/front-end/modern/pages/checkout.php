@@ -184,9 +184,9 @@
                                 <table class="table table-step-shipping">
                                     <tbody>
                                         <?php if (isset($payment_methods['cod_method']) && $payment_methods['cod_method'] == 1) {
-                                            
-                                            
-                                            ?>
+
+
+                                        ?>
                                             <tr>
                                                 <label for="cod">
                                                     <td>
@@ -200,7 +200,7 @@
                                                         </label>
                                                     </td>
                                                     <td>
-                                                        
+
                                                         <label for="cod" class="<?= isset($cart[0]['is_cod_allowed']) && $cart[0]['is_cod_allowed'] == 0 ? 'text-inverse' : '' ?>">
                                                             <?= !empty($this->lang->line('cash_on_delivery')) ? str_replace('\\', '', $this->lang->line('cash_on_delivery')) : 'Cash On Delivery' ?>
                                                         </label>
@@ -679,39 +679,61 @@
                                             <?php } else { ?>
                                                 <?php if ($cart[0]['type'] != 'digital_product') { ?>
 
-                                                    <tr>
-                                                        <td>
-                                                            <div class="row ">
-                                                                <div class="column delivery_charge">
-                                                                    <h3 class="text-success"><?= !empty($this->lang->line('delivery_charge')) ? str_replace('\\', '', $this->lang->line('delivery_charge')) : 'Delivery Charges' ?></h3>
+                                                    <!-- SHIPPING/DELIVERY SECTION -->
+                                                    <?php if ($cart[0]['type'] != 'digital_product') { ?>
+                                                        <tr>
+                                                            <td>
+                                                                <div class="row">
+                                                                    <div class="column delivery_charge">
+                                                                        <h3 class="text-success">
+                                                                            <?= !empty($this->lang->line('delivery_charge')) ? str_replace('\\', '', $this->lang->line('delivery_charge')) : 'Delivery Charges' ?>
+                                                                        </h3>
+                                                                    </div>
                                                                 </div>
 
-                                                            </div>
-                                                            <div class="d-flex <?= isset($cart[0]['is_cod_allowed']) && $cart[0]['is_cod_allowed'] == 0 ? 'd-none' : '' ?>">
-                                                                <div class="delivery_charge">
-                                                                    <h6 class="fs-15">
-                                                                        <?= !empty($this->lang->line('delivery_charge_with_cod')) ? str_replace('\\', '', $this->lang->line('delivery_charge_with_cod')) : 'Delivery Charge with COD :' ?>
-                                                                    </h6>
+                                                                <!-- Standard Delivery Boy Charges -->
+                                                                <div id="standard_delivery_section" style="display:none;">
+                                                                    <div class="d-flex <?= isset($cart[0]['is_cod_allowed']) && $cart[0]['is_cod_allowed'] == 0 ? 'd-none' : '' ?>">
+                                                                        <div class="delivery_charge">
+                                                                            <h6 class="fs-15">
+                                                                                <?= !empty($this->lang->line('delivery_charge_with_cod')) ? str_replace('\\', '', $this->lang->line('delivery_charge_with_cod')) : 'Delivery Charge with COD :' ?>
+                                                                            </h6>
+                                                                        </div>
+                                                                        <div class="deliverycharge_currency ms-2 d-flex gap-1">
+                                                                            <?= $settings['currency'] . ' ' ?><span class="delivery_charge_with_cod"></span>
+                                                                            <input type="hidden" name="delivery_charge_with_cod" class="delivery_charge_with_cod" value="" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="d-flex">
+                                                                        <div class="delivery_charge">
+                                                                            <h6 class="fs-15">
+                                                                                <?= !empty($this->lang->line('delivery_charge_without_cod')) ? str_replace('\\', '', $this->lang->line('delivery_charge_without_cod')) : 'Delivery Charge without COD :' ?>
+                                                                            </h6>
+                                                                        </div>
+                                                                        <div class="deliverycharge_currency ms-2 d-flex gap-1">
+                                                                            <?= $settings['currency'] . ' ' ?><span class="delivery_charge_without_cod"></span>
+                                                                            <input type="hidden" name="delivery_charge_without_cod" class="delivery_charge_without_cod" value="" />
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                                <div class="deliverycharge_currency ms-2 d-flex gap-1">
-                                                                    <?= $settings['currency'] . ' ' ?><span class="delivery_charge_with_cod"></span>
-                                                                    <input type="hidden" name="delivery_charge_with_cod" class="delivery_charge_with_cod" value="" />
 
+                                                                <!-- Shipping Company Quotes -->
+                                                                <div id="shipping_quotes_section" style="display:none;">
+                                                                    <div id="quotes_container"></div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="d-flex">
-                                                                <div class="delivery_charge">
-                                                                    <h6 class="fs-15">
-                                                                        <?= !empty($this->lang->line('delivery_charge_without_cod')) ? str_replace('\\', '', $this->lang->line('delivery_charge_without_cod')) : 'Delivery Charge without COD :' ?>
-                                                                    </h6>
+
+                                                                <!-- Delivery Unavailable -->
+                                                                <div id="delivery_unavailable_section" style="display:none;">
+                                                                    <p class="text-danger">Delivery unavailable for selected address.</p>
                                                                 </div>
-                                                                <div class="deliverycharge_currency ms-2 d-flex gap-1">
-                                                                    <?= $settings['currency'] . ' ' ?><span class="delivery_charge_without_cod"></span>
-                                                                    <input type="hidden" name="delivery_charge_without_cod" class="delivery_charge_without_cod" value="" />
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
+
+                                                                <!-- Hidden fields -->
+                                                                <input type="hidden" name="provider_type" id="provider_type" value="">
+                                                                <input type="hidden" name="selected_quote_id" id="selected_quote_id" value="">
+                                                                <input type="hidden" name="shipping_company_id" id="shipping_company_id" value="">
+                                                            </td>
+                                                        </tr>
+                                                    <?php } ?>
                                                 <?php } ?>
                                             <?php } ?>
 
@@ -927,7 +949,243 @@
 </div>
 <!--/.modal -->
 
+<style>
+    /* ============================================
+   SHIPPING COMPANY QUOTES - MODERN CARD DESIGN
+   ============================================ */
 
+    #quotes_container {
+        margin-top: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .shipping-option-card {
+        position: relative;
+        border: 2px solid #e1e4e8;
+        border-radius: 10px;
+        background: #ffffff;
+        transition: all 0.25s ease;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .shipping-option-card:hover {
+        border-color: #b8bcc2;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .shipping-option-card.active {
+        border-color: #28a745;
+        background-color: #f7fcf9;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+    }
+
+    /* Hide the actual radio button */
+    .shipping-option-radio {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* The label acts as the entire clickable area */
+    .shipping-option-label {
+        display: block;
+        padding: 18px 20px;
+        cursor: pointer;
+        margin: 0;
+        position: relative;
+    }
+
+    /* Custom radio indicator - positioned at top right */
+    .shipping-option-label::before {
+        content: '';
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #ccc;
+        border-radius: 50%;
+        background: #fff;
+        transition: all 0.2s ease;
+    }
+
+    /* Radio indicator when selected */
+    .shipping-option-card.active .shipping-option-label::before {
+        border-color: #28a745;
+        background: #28a745;
+        box-shadow: inset 0 0 0 4px #fff;
+    }
+
+    /* Header with company name and price */
+    .shipping-option-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        padding-right: 40px;
+        /* Space for radio button */
+    }
+
+    .company-name {
+        font-size: 17px;
+        font-weight: 700;
+        color: #212529;
+        letter-spacing: -0.2px;
+    }
+
+    .total-price {
+        font-size: 24px;
+        font-weight: 700;
+        color: #28a745;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    /* Details section */
+    .shipping-option-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        padding-top: 12px;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .details-left {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .detail-row {
+        display: grid;
+        grid-template-columns: 95px 1fr;
+        gap: 8px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .detail-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .detail-value {
+        color: #212529;
+        font-weight: 600;
+    }
+
+    .detail-row.additional-charge {
+        padding-left: 10px;
+        border-left: 3px solid #ffc107;
+        background: #fffbf0;
+        padding: 4px 0 4px 10px;
+        margin-left: -5px;
+        border-radius: 3px;
+    }
+
+    .detail-row.additional-charge .detail-label {
+        color: #856404;
+        font-size: 13px;
+    }
+
+    .detail-row.additional-charge .detail-value {
+        color: #856404;
+        font-size: 13px;
+    }
+
+    /* COD Badge */
+    .details-right {
+        flex-shrink: 0;
+    }
+
+    .cod-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .cod-badge.available {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        color: #155724;
+        border: 1px solid #b1dfbb;
+    }
+
+    .cod-badge.unavailable {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        color: #721c24;
+        border: 1px solid #f1b0b7;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .shipping-option-label {
+            padding: 15px 16px;
+        }
+
+        .shipping-option-header {
+            padding-right: 35px;
+        }
+
+        .company-name {
+            font-size: 16px;
+        }
+
+        .total-price {
+            font-size: 22px;
+        }
+
+        .detail-row {
+            grid-template-columns: 85px 1fr;
+            font-size: 13px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .shipping-option-label {
+            padding: 14px;
+        }
+
+        .shipping-option-header {
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 35px;
+        }
+
+        .total-price {
+            font-size: 20px;
+        }
+
+        .shipping-option-details {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .details-right {
+            align-self: flex-start;
+        }
+
+        .detail-row {
+            grid-template-columns: 80px 1fr;
+            gap: 6px;
+        }
+
+        .company-name {
+            font-size: 15px;
+        }
+    }
+</style>
 
 
 <?php if (isset($payment_methods['paytm_payment_method']) && $payment_methods['paytm_payment_method'] == 1) {

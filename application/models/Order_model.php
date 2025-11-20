@@ -322,7 +322,7 @@ class Order_model extends CI_Model
                         cancel_shiprocket_order($order_tracking_data[0]['shiprocket_order_id']);
                     }
                 }
-                //send notification to  while order return request pending 
+                //send notification to  while order return request pending
                 if ($status == 'return_request_pending') {
                     $fcm_admin_subject = 'New return request get for order ID #' . $order_id;
                     $fcm_admin_msg = 'New return request get in ' . $system_settings['app_name'] . ' please process it.';
@@ -592,6 +592,31 @@ class Order_model extends CI_Model
                 $order_data['longitude'] = $_POST['longitude'];
             }
             $order_data['notes'] = $data['order_note'];
+
+
+            // --- attach shipping info if provided ---
+            if (isset($data['shipping_company_id']) && $data['shipping_company_id'] !== '') {
+                $order_data['shipping_company_id'] = $data['shipping_company_id'];
+            }
+
+            if (isset($data['selected_quote_id']) && $data['selected_quote_id'] !== '') {
+                $order_data['selected_quote_id'] = $data['selected_quote_id'];
+            }
+
+            /*
+            * shipping_quote_snapshot may be a JSON string or an array.
+            * Convert arrays to a JSON string so the DB column stores valid JSON/LONGTEXT.
+            * escape_array() was already called on $data earlier, so values are already escaped.
+            */
+            if (isset($data['shipping_quote_snapshot']) && $data['shipping_quote_snapshot'] !== '') {
+                if (is_array($data['shipping_quote_snapshot'])) {
+                    $order_data['shipping_quote_snapshot'] = json_encode($data['shipping_quote_snapshot'], JSON_UNESCAPED_UNICODE);
+                } else {
+                    // assume it's already a JSON string (or plain text)
+                    $order_data['shipping_quote_snapshot'] = $data['shipping_quote_snapshot'];
+                }
+            }
+
 
             $this->db->insert('orders', $order_data);
             $last_order_id = $this->db->insert_id();
@@ -902,7 +927,7 @@ class Order_model extends CI_Model
 
     public function get_order_details($where = NULL, $status = false, $seller_id = NULL)
     {
-        $res = $this->db->select('oi.*,ot.courier_agency,ot.tracking_id,ot.url,oi.otp as item_otp,a.name as user_name,oi.id as order_item_id, 
+        $res = $this->db->select('oi.*,ot.courier_agency,ot.tracking_id,ot.url,oi.otp as item_otp,a.name as user_name,oi.id as order_item_id,
         oi.seller_id as order_seller_id, p.*,v.product_id,o.*,o.email as user_email,o.id as order_id,o.total as order_total,o.wallet_balance,
         oi.active_status as oi_active_status,u.email,u.username as uname, u.country_code as country_code,oi.status as order_status,p.id as product_id,
         p.pickup_location as pickup_location,p.slug as product_slug,p.sku as product_sku,v.sku, v.price as product_price,v.special_price as product_special_price ,

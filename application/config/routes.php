@@ -57,6 +57,7 @@ $route['admin/brands'] = "admin/brand";
 $route['delivery_boy'] = "delivery_boy/home";
 $route['delivery-boy'] = "delivery_boy/home";
 $route['delivery-boy/(:any)'] = "delivery_boy/$1";
+
 $route['delivery-boy/(:any)/(:any)'] = "delivery_boy/$1/$2";
 $route['delivery-boy/(:any)/(:any)/(:any)'] = "delivery_boy/$1/$2/$3";
 $route['delivery-boy/(:any)/(:any)/(:any)/(:any)'] = "delivery_boy/$1/$2/$3/$4";
@@ -77,7 +78,7 @@ $route['admin/shipping-companies/(:any)'] = 'admin/Shipping_companies/$1';
 $route['admin/shipping-companies/(:any)/(:any)'] = 'admin/Shipping_companies/$1/$2';
 
 // Shipping Company Routes
-$route['shipping-company'] = "shipping_company/home";
+
 $route['shipping-company'] = "shipping_company/home";
 $route['shipping-company/(:any)'] = "shipping_company/$1";
 $route['shipping-company/(:any)/(:any)'] = "shipping_company/$1/$2";

@@ -455,7 +455,7 @@ class Ion_auth
 
 	public function is_shipping_company($id = FALSE)
 	{
-		return $this->ion_auth_modal->in_group('shipping_company', $id);
+		return $this->ion_auth_model->in_group('shipping_company', $id);
 	}
 
 	/**

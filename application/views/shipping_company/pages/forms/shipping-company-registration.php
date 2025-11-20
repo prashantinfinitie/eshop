@@ -5,7 +5,7 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="card card-info">
-                        <form class="form-horizontal" method="POST" id="shipping_company_registration_form" enctype="multipart/form-data">
+                        <form class="form-horizontal" method="POST" id="add_shipping_company_form" enctype="multipart/form-data">
                             <div class="card-body">
                                 <div class="login-logo">
                                     <a href="<?= base_url('shipping_company/login'); ?>">
@@ -111,29 +111,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Assign Zipcodes -->
-                                <div class="form-group row">
-                                    <label for="assign_zipcode" class="col-form-label col-sm-2">
-                                        Serviceable Zipcodes <span class='text-danger text-sm'>*</span>
-                                    </label>
-                                    <div class="col-sm-10">
-                                        <select name="assign_zipcode[]"
-                                            class="assign_zipcode search_zipcode form-control w-100"
-                                            id="assign_zipcode"
-                                            multiple>
-                                            <?php if (isset($zipcodes) && !empty($zipcodes)) { ?>
-                                                <?php foreach ($zipcodes as $row) { ?>
-                                                    <option value="<?= $row['id']; ?>">
-                                                        <?= $row['zipcode']; ?>
-                                                    </option>
-                                                <?php } ?>
-                                            <?php } ?>
-                                        </select>
-                                        <small class="form-text text-muted">
-                                            Select zipcodes where your company provides delivery service.
-                                        </small>
-                                    </div>
-                                </div>
+
 
                                 <!-- KYC Documents -->
                                 <div class="form-group row">

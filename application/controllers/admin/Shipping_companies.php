@@ -22,8 +22,6 @@ class Shipping_companies extends CI_Controller
 
     public function index()
     {
-
-
         try{
 
             if ($this->ion_auth->logged_in() && $this->ion_auth->is_admin()) {
@@ -59,8 +57,6 @@ class Shipping_companies extends CI_Controller
         }
 
     }
-
-
 
     public function manage_shipping_company()
     {
@@ -123,7 +119,7 @@ class Shipping_companies extends CI_Controller
 
             if (delete_details(['user_id' => $_GET['id']], 'users_groups')) {
                 // Delete zipcode assignments
-                delete_details(['shipping_company_id' => $company_id], 'shipping_company_zipcodes');
+                // delete_details(['shipping_company_id' => $company_id], 'zipcodes');
 
                 $this->response['error'] = false;
                 $this->response['message'] = 'Shipping company removed successfully';
@@ -168,9 +164,6 @@ class Shipping_companies extends CI_Controller
             if (isset($_POST['pincode_wise_deliverability']) && !empty($_POST['pincode_wise_deliverability']) && ($_POST['pincode_wise_deliverability'] == 1)) {
                 $this->form_validation->set_rules('serviceable_zipcodes[]', 'Serviceable Zipcodes', 'trim|required|xss_clean');
             }
-            if (isset($_POST['city_wise_deliverability']) && !empty($_POST['city_wise_deliverability']) && ($_POST['city_wise_deliverability'] == 1)) {
-                $this->form_validation->set_rules('serviceable_cities[]', 'Serviceable Cities', 'trim|required|xss_clean');
-            }
 
             // KYC document validation
             if (!isset($_POST['edit_shipping_company'])) {
@@ -192,172 +185,184 @@ class Shipping_companies extends CI_Controller
                 $this->response['csrfHash'] = $this->security->get_csrf_hash();
                 $this->response['message'] = validation_errors();
                 print_r(json_encode($this->response));
-            } else {
+                return;
+            }
 
-                // Upload KYC documents
-                if (!file_exists(FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH)) {
-                    mkdir(FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH, 0777, true);
-                }
+            // Upload KYC documents
+            if (!file_exists(FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH)) {
+                mkdir(FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH, 0777, true);
+            }
 
-                $temp_array = array();
-                $files = $_FILES;
-                $images_new_name_arr = array();
-                $images_info_error = "";
-                $allowed_media_types = implode('|', allowed_media_types());
-                $config = [
-                    'upload_path' =>  FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH,
-                    'allowed_types' => $allowed_media_types,
-                    'max_size' => 8000,
-                ];
+            $files = $_FILES;
+            $images_new_name_arr = array();
+            $images_info_error = "";
+            $allowed_media_types = implode('|', allowed_media_types());
+            $config = [
+                'upload_path' =>  FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH,
+                'allowed_types' => $allowed_media_types,
+                'max_size' => 8000,
+            ];
 
-                if (isset($files['kyc_documents']) && !empty($files['kyc_documents']['name'][0]) && isset($files['kyc_documents']['name'][0])) {
-                    $doc_count = count((array)$files['kyc_documents']['name']);
-                    $doc_upload = $this->upload;
-                    $doc_upload->initialize($config);
+            if (isset($files['kyc_documents']) && !empty($files['kyc_documents']['name'][0])) {
+                $doc_count = count((array)$files['kyc_documents']['name']);
+                $doc_upload = $this->upload;
+                $doc_upload->initialize($config);
 
-                    if (isset($_POST['edit_shipping_company']) && !empty($_POST['edit_shipping_company']) && isset($company_data[0]['kyc_documents']) && !empty($company_data[0]['kyc_documents'])) {
-                        $old_docs = explode(',', $company_data[0]['kyc_documents']);
-                        foreach ($old_docs as $old_doc) {
-                            if (file_exists(FCPATH . $old_doc)) {
-                                unlink(FCPATH . $old_doc);
-                            }
-                        }
-                    }
-
-                    for ($i = 0; $i < $doc_count; $i++) {
-                        if (!empty($_FILES['kyc_documents']['name'][$i])) {
-                            $_FILES['temp_doc']['name'] = $files['kyc_documents']['name'][$i];
-                            $_FILES['temp_doc']['type'] = $files['kyc_documents']['type'][$i];
-                            $_FILES['temp_doc']['tmp_name'] = $files['kyc_documents']['tmp_name'][$i];
-                            $_FILES['temp_doc']['error'] = $files['kyc_documents']['error'][$i];
-                            $_FILES['temp_doc']['size'] = $files['kyc_documents']['size'][$i];
-
-                            if (!$doc_upload->do_upload('temp_doc')) {
-                                $images_info_error = 'kyc_documents: ' . $images_info_error . ' ' . $doc_upload->display_errors();
-                            } else {
-                                $temp_array = $doc_upload->data();
-                                resize_review_images($temp_array, FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH);
-                                $images_new_name_arr[$i] = SHIPPING_COMPANY_DOCUMENTS_PATH . $temp_array['file_name'];
-                            }
-                        }
-                    }
-
-                    // Delete uploaded files if error occurred
-                    if ($images_info_error != NULL || !$this->form_validation->run()) {
-                        if (isset($images_new_name_arr) && !empty($images_new_name_arr)) {
-                            foreach ($images_new_name_arr as $key => $val) {
-                                if (file_exists(FCPATH . $images_new_name_arr[$key])) {
-                                    unlink(FCPATH . $images_new_name_arr[$key]);
-                                }
-                            }
+                if (isset($_POST['edit_shipping_company']) && !empty($_POST['edit_shipping_company']) && isset($company_data[0]['kyc_documents']) && !empty($company_data[0]['kyc_documents'])) {
+                    $old_docs = explode(',', $company_data[0]['kyc_documents']);
+                    foreach ($old_docs as $old_doc) {
+                        if (file_exists(FCPATH . $old_doc)) {
+                            unlink(FCPATH . $old_doc);
                         }
                     }
                 }
 
+                for ($i = 0; $i < $doc_count; $i++) {
+                    if (!empty($_FILES['kyc_documents']['name'][$i])) {
+                        $_FILES['temp_doc']['name'] = $files['kyc_documents']['name'][$i];
+                        $_FILES['temp_doc']['type'] = $files['kyc_documents']['type'][$i];
+                        $_FILES['temp_doc']['tmp_name'] = $files['kyc_documents']['tmp_name'][$i];
+                        $_FILES['temp_doc']['error'] = $files['kyc_documents']['error'][$i];
+                        $_FILES['temp_doc']['size'] = $files['kyc_documents']['size'][$i];
+
+                        if (!$doc_upload->do_upload('temp_doc')) {
+                            $images_info_error = 'kyc_documents: ' . $images_info_error . ' ' . $doc_upload->display_errors();
+                        } else {
+                            $temp_array = $doc_upload->data();
+                            resize_review_images($temp_array, FCPATH . SHIPPING_COMPANY_DOCUMENTS_PATH);
+                            $images_new_name_arr[$i] = SHIPPING_COMPANY_DOCUMENTS_PATH . $temp_array['file_name'];
+                        }
+                    }
+                }
+
+                // Delete uploaded files if error occurred
                 if ($images_info_error != NULL) {
-                    $this->response['error'] = true;
-                    $this->response['message'] =  $images_info_error;
-                    print_r(json_encode($this->response));
-                    return false;
+                    if (isset($images_new_name_arr) && !empty($images_new_name_arr)) {
+                        foreach ($images_new_name_arr as $key => $val) {
+                            if (file_exists(FCPATH . $images_new_name_arr[$key])) {
+                                unlink(FCPATH . $images_new_name_arr[$key]);
+                            }
+                        }
+                    }
                 }
+            }
 
-                if (isset($_POST['edit_shipping_company'])) {
-                    if (!edit_unique($this->input->post('email', true), 'users.email.' . $this->input->post('edit_shipping_company', true) . '') || !edit_unique($this->input->post('mobile', true), 'users.mobile.' . $this->input->post('edit_shipping_company', true) . '')) {
-                        $response["error"]   = true;
-                        $response["message"] = "Email or mobile already exists !";
-                        $response['csrfName'] = $this->security->get_csrf_token_name();
-                        $response['csrfHash'] = $this->security->get_csrf_hash();
-                        $response["data"] = array();
-                        echo json_encode($response);
-                        return false;
-                    }
+            if ($images_info_error != NULL) {
+                $this->response['error'] = true;
+                $this->response['message'] =  $images_info_error;
+                $this->response['csrfName'] = $this->security->get_csrf_token_name();
+                $this->response['csrfHash'] = $this->security->get_csrf_hash();
+                print_r(json_encode($this->response));
+                return;
+            }
 
-                    if (isset($_POST['serviceable_zipcodes']) && !empty($_POST['serviceable_zipcodes'])) {
-                        $serviceable_zipcodes = implode(",", $this->input->post('serviceable_zipcodes', true));
-                    } else {
-                        $serviceable_zipcodes = NULL;
-                    }
+            // Check for duplicate email/mobile
+            if (isset($_POST['edit_shipping_company'])) {
+                if (
+                    !edit_unique($this->input->post('email', true), 'users.email.' . $this->input->post('edit_shipping_company', true))
+                    || !edit_unique($this->input->post('mobile', true), 'users.mobile.' . $this->input->post('edit_shipping_company', true))
+                ) {
+                    $this->response["error"] = true;
+                    $this->response["message"] = "Email or mobile already exists!";
+                    $this->response['csrfName'] = $this->security->get_csrf_token_name();
+                    $this->response['csrfHash'] = $this->security->get_csrf_hash();
+                    print_r(json_encode($this->response));
+                    return;
+                }
+            } else {
+                if (
+                    !$this->form_validation->is_unique($_POST['mobile'], 'users.mobile')
+                    || !$this->form_validation->is_unique($_POST['email'], 'users.email')
+                ) {
+                    $this->response["error"] = true;
+                    $this->response["message"] = "Email or mobile already exists!";
+                    $this->response['csrfName'] = $this->security->get_csrf_token_name();
+                    $this->response['csrfHash'] = $this->security->get_csrf_hash();
+                    print_r(json_encode($this->response));
+                    return;
+                }
+            }
 
-                    if (isset($_POST['serviceable_cities']) && !empty($_POST['serviceable_cities'])) {
-                        $serviceable_cities = implode(",", $this->input->post('serviceable_cities', true));
-                    } else {
-                        $serviceable_cities = NULL;
-                    }
+            // Prepare data for model
+            $model_data = [
+                'company_name' => $this->input->post('company_name', true),
+                'email' => $this->input->post('email', true),
+                'mobile' => $this->input->post('mobile', true),
+                'address' => $this->input->post('address', true),
+                'status' => $this->input->post('status', true),
+                'serviceable_zipcodes' => $this->input->post('assign_zipcode', true),
+                'kyc_documents' => isset($images_new_name_arr) && !empty($images_new_name_arr)
+                    ? implode(',', $images_new_name_arr)
+                    : (isset($company_data[0]['kyc_documents']) ? $company_data[0]['kyc_documents'] : '')
+            ];
 
-                    $_POST['status'] = $this->input->post('status', true);
-                    $_POST['serviceable_zipcodes'] = $serviceable_zipcodes;
-                    $_POST['serviceable_cities'] = $serviceable_cities;
-                    $_POST['kyc_documents'] = isset($images_new_name_arr) && !empty($images_new_name_arr) ? implode(',', (array)$images_new_name_arr) : (isset($company_data[0]['kyc_documents']) ? $company_data[0]['kyc_documents'] : '');
+            if (isset($_POST['edit_shipping_company'])) {
+                // UPDATE EXISTING SHIPPING COMPANY
+                $model_data['edit_shipping_company'] = $_POST['edit_shipping_company'];
+                $this->Shipping_company_model->update_shipping_company($model_data);
 
+                // Send approval email if status changed to approved
+                if ($_POST['status'] == 1) {
                     $email_settings = get_settings('email_settings', true);
-
-                    $this->Shipping_company_model->update_shipping_company($_POST);
-
-                    if (!empty($_POST['edit_shipping_company']) && $_POST['status'] == 1) {
-                        if (isset($email_settings) && !empty($email_settings)) {
-                            $company = fetch_details('users', ['id' => $_POST['edit_shipping_company']]);
+                    if (!empty($email_settings)) {
+                        $company = fetch_details('users', ['id' => $_POST['edit_shipping_company']]);
+                        if (!empty($company[0]['email'])) {
                             $title = "Congratulations! Your Shipping Company Account Has Been Approved";
-                            $mail_admin_msg = 'We are delighted to inform you that your application to become an approved shipping company on our platform has been successful! Congratulations on this significant milestone.';
+                            $mail_admin_msg = 'We are delighted to inform you that your application to become an approved shipping company on our platform has been successful!';
                             $email_message = array(
-                                'username' => 'Hello, Dear <b>' . ucfirst($company[0]['username']) . '</b>, ',
+                                'username' => 'Hello, Dear <b>' . ucfirst($company[0]['username']) . '</b>',
                                 'subject' => $title,
                                 'email' => $company[0]['email'],
                                 'message' => $mail_admin_msg
                             );
-                            send_mail($company[0]['email'],  $title, $this->load->view('admin/pages/view/contact-email-template', $email_message, TRUE));
+                            send_mail($company[0]['email'], $title, $this->load->view('admin/pages/view/contact-email-template', $email_message, TRUE));
                         }
                     }
-                } else {
-                    if (!$this->form_validation->is_unique($_POST['mobile'], 'users.mobile') || !$this->form_validation->is_unique($_POST['email'], 'users.email')) {
-                        $response["error"]   = true;
-                        $response["message"] = "Email or mobile already exists !";
-                        $response['csrfName'] = $this->security->get_csrf_token_name();
-                        $response['csrfHash'] = $this->security->get_csrf_hash();
-                        $response["data"] = array();
-                        echo json_encode($response);
-                        return false;
-                    }
-
-                    $identity_column = $this->config->item('identity', 'ion_auth');
-                    $email = strtolower($this->input->post('email'));
-                    $mobile = $this->input->post('mobile');
-                    $identity = ($identity_column == 'mobile') ? $mobile : $email;
-                    $password = $this->input->post('password');
-
-                    if (isset($_POST['serviceable_zipcodes']) && !empty($_POST['serviceable_zipcodes'])) {
-                        $serviceable_zipcodes = implode(",", $this->input->post('serviceable_zipcodes', true));
-                    } else {
-                        $serviceable_zipcodes = NULL;
-                    }
-
-                    if (isset($_POST['serviceable_cities']) && !empty($_POST['serviceable_cities'])) {
-                        $serviceable_cities = implode(",", $this->input->post('serviceable_cities', true));
-                    } else {
-                        $serviceable_cities = NULL;
-                    }
-
-                    $additional_data = [
-                        'username' => $this->input->post('company_name'),
-                        'address' => $this->input->post('address'),
-                        'serviceable_zipcodes' => $serviceable_zipcodes,
-                        'serviceable_cities' => $serviceable_cities,
-                        'type' => 'phone',
-                        'kyc_documents' => implode(',', $images_new_name_arr),
-                        'status' => $this->input->post('status', true),
-                        'is_shipping_company' => 1,
-                    ];
-
-                    $this->ion_auth->register($identity, $password, $email, $additional_data, ['6']);
-                    update_details(['active' => 1], [$identity_column => $identity], 'users');
                 }
 
-                $this->response['error'] = false;
-                $this->response['csrfName'] = $this->security->get_csrf_token_name();
-                $this->response['csrfHash'] = $this->security->get_csrf_hash();
-                $message = (isset($_POST['edit_shipping_company'])) ? 'Shipping Company Updated Successfully' : 'Shipping Company Added Successfully';
-                $this->response['message'] = $message;
-                print_r(json_encode($this->response));
+                $message = 'Shipping Company Updated Successfully';
+            } else {
+                // ADD NEW SHIPPING COMPANY
+                $identity_column = $this->config->item('identity', 'ion_auth');
+                $email = strtolower($this->input->post('email'));
+                $mobile = $this->input->post('mobile');
+                $identity = ($identity_column == 'mobile') ? $mobile : $email;
+                $password = $this->input->post('password');
+
+                // Minimal data for Ion Auth registration (just essentials for authentication)
+                $additional_data = [
+                    'username' => $this->input->post('company_name'),
+                    'type' => 'phone',
+                    'is_shipping_company' => 1,
+                ];
+
+                // Register user with Ion Auth (handles password hashing, group assignment)
+                $user_id = $this->ion_auth->register($identity, $password, $email, $additional_data, ['6']);
+
+                if ($user_id) {
+                    // Now use the model to update ALL fields consistently
+                    $model_data['edit_shipping_company'] = $user_id;
+                    $this->Shipping_company_model->update_shipping_company($model_data);
+
+                    // Activate the user
+                    $this->db->where('id', $user_id)->update('users', ['active' => 1]);
+                } else {
+                    $this->response['error'] = true;
+                    $this->response['message'] = 'Failed to create shipping company account';
+                    $this->response['csrfName'] = $this->security->get_csrf_token_name();
+                    $this->response['csrfHash'] = $this->security->get_csrf_hash();
+                    print_r(json_encode($this->response));
+                    return;
+                }
+
+                $message = 'Shipping Company Added Successfully';
             }
+
+            $this->response['error'] = false;
+            $this->response['csrfName'] = $this->security->get_csrf_token_name();
+            $this->response['csrfHash'] = $this->security->get_csrf_hash();
+            $this->response['message'] = $message;
+            print_r(json_encode($this->response));
         } else {
             redirect('admin/login', 'refresh');
         }
@@ -466,5 +471,53 @@ class Shipping_companies extends CI_Controller
         } else {
             redirect('admin/login', 'refresh');
         }
+    }
+
+
+    /**
+     * AJAX endpoint: Return zipcodes for Select2
+     * URL: admin/shipping_companies/get_company_zipcodes
+     * Accepts GET:
+     *  - search (string)      : optional search term
+     *  - limit  (int)         : optional limit (default 50)
+     *  - provider_type (str)  : optional, defaults to 'company'
+     */
+    public function get_company_zipcodes()
+    {
+        if (!($this->ion_auth->logged_in() && $this->ion_auth->is_admin())) {
+            // Return empty array for unauthorized requests (Select2 expects JSON)
+            header('Content-Type: application/json');
+            echo json_encode([]);
+            return;
+        }
+
+        $search = $this->input->get('search', true);
+        $limit = intval($this->input->get('limit', true));
+        if ($limit <= 0) {
+            $limit = 50;
+        }
+
+        // Allow overriding provider_type for flexibility; default to 'company'
+        $provider_type = $this->input->get('provider_type', true);
+        if (empty($provider_type)) {
+            $provider_type = 'company';
+        }
+
+        $this->db->select('id, zipcode');
+        $this->db->from('zipcodes');
+        $this->db->where('provider_type', $provider_type);
+
+        if (!empty($search)) {
+            // basic sanitation — CI's query builder will escape values
+            $this->db->like('zipcode', $search);
+        }
+
+        $this->db->order_by('zipcode', 'ASC');
+        $this->db->limit($limit);
+
+        $zipcodes = $this->db->get()->result_array();
+
+        header('Content-Type: application/json');
+        echo json_encode($zipcodes);
     }
 }

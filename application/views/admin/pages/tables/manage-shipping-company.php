@@ -207,6 +207,7 @@
                                     if (!empty($assigned_zipcodes)) {
                                         $zipcodes_data = fetch_details('zipcodes', ['provider_type' => 'company'], 'zipcode,id', "", "", "", "", "id", $assigned_zipcodes);
                                     }
+
                                     ?>
                                     <select name="assign_zipcode[]" class="assign_zipcode form-control w-100" multiple onload="multiselect()" id="">
                                         <?php if (!empty($zipcodes_data)) {

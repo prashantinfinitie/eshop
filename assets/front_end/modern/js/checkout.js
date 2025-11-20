@@ -4,9 +4,9 @@ var fatoorah_url = '';
 var currency = $('#currency').val();
 var supported_locals = $('#supported_locals').val();
 
-
+var addresses = [];
 $(document).ready(function () {
-    var addresses = [];
+
 
     $('#documents').on('change', function () {
         var allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'];
@@ -207,7 +207,7 @@ $(document).ready(function () {
     //     var documents = $('#documents').val();
     //     var email_id = $('#digital_product_email').val();
     //     var product_type = $('#product_type').val();
-    //     var download_allowed = $('#download_allowed').val(); // 0 : not downlodable | 1 : download allowed 
+    //     var download_allowed = $('#download_allowed').val(); // 0 : not downlodable | 1 : download allowed
     //     if ($('#wallet_balance').is(":checked")) {
     //         var wallet_used = 1;
     //     } else {
@@ -370,9 +370,9 @@ $(document).ready(function () {
                             //     $("#flutterwave_transaction_ref").val(data.tx_ref);
                             //     place_order().done(function (result) {
                             // if (result.error == false) {
-                                setTimeout(function () {
-                                    location.href = base_url + 'payment/success';
-                                }, 3000);
+                            setTimeout(function () {
+                                location.href = base_url + 'payment/success';
+                            }, 3000);
                             // }
                             // });
                         } else {
@@ -420,7 +420,7 @@ $(document).ready(function () {
         var address_id = $("#address_id").val();
         var email_id = $('#digital_product_email').val();
         var product_type = $('#product_type').val();
-        var download_allowed = $('#download_allowed').val(); // 0 : not downlodable | 1 : download allowed 
+        var download_allowed = $('#download_allowed').val(); // 0 : not downlodable | 1 : download allowed
         var documents = $('#documents').val();
         if ($('#wallet_balance').is(":checked")) {
             var wallet_used = 1;
@@ -972,7 +972,7 @@ $(document).ready(function () {
         })
     });
 
-    // clear promo code 
+    // clear promo code
     $('#clear_promo_btn').on('click', function (event) {
         event.preventDefault()
         $('#promocode_div').addClass('d-none')
@@ -1151,6 +1151,10 @@ $(document).ready(function () {
         $('#address_id').val(address.id);
         $('#mobile').val(address.mobile);
         $('.address_modal').modal('hide');
+
+        // **IMPORTANT**: Fetch shipping options (quotes or standard)
+        fetchShippingQuotes(address.id);
+
         var address_id = $('#address_id').val();
         $.ajax({
             type: 'POST',
@@ -1420,7 +1424,7 @@ $(document).ready(function () {
     })
 });
 
-//wallt balance 
+//wallt balance
 $(document).on('click', '#wallet_balance', function () {
     var current_wallet_balance = $('#current_wallet_balance').val();
     var wallet_balance = current_wallet_balance.replace(",", "");
@@ -1602,6 +1606,11 @@ function paytm_setup(txnToken, orderId, amount, app_name, logo, username, user_e
                     var longitude = sessionStorage.getItem("longitude") === null ? '' : sessionStorage.getItem("longitude");
                     formdata.append('latitude', latitude);
                     formdata.append('longitude', longitude);
+
+
+                    formdata.append('provider_type', $('#provider_type').val());
+                    formdata.append('selected_quote_id', $('#selected_quote_id').val());
+                    formdata.append('shipping_company_id', $('#shipping_company_id').val());
                     $.ajax({
                         type: 'POST',
                         data: formdata,
@@ -1722,3 +1731,401 @@ $('#door_step').on('change', function (e) {
     $('.delivery-charge').text(global_delivery_charge)
     $('#final_total').text(global_final_total)
 })
+
+
+// shipping company
+
+
+// ============================================
+// SHIPPING COMPANY QUOTES FUNCTIONALITY
+// ============================================
+
+/**
+ * Fetch and display shipping quotes when address changes
+ */
+function fetchShippingQuotes(address_id) {
+    if (!address_id) return;
+
+    $.ajax({
+        type: 'POST',
+        url: base_url + 'cart/get_shipping_company_quotes',
+        data: {
+            [csrfName]: csrfHash,
+            'address_id': address_id
+        },
+        dataType: 'json',
+        beforeSend: function () {
+            $('#quotes_container').html('<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>Loading shipping options...</p></div>');
+        },
+        success: function (response) {
+            csrfName = response.csrfName;
+            csrfHash = response.csrfHash;
+
+            // Hide all sections first
+            $('#standard_delivery_section').hide();
+            $('#shipping_quotes_section').hide();
+            $('#delivery_unavailable_section').hide();
+
+            if (response.error === false && response.delivery_available) {
+
+                $('#provider_type').val(response.provider_type);
+
+                if (response.provider_type === 'company') {
+                    // Show shipping company quotes
+                    displayShippingQuotes(response.quotes);
+                    $('#shipping_quotes_section').show();
+
+                } else if (response.provider_type === 'delivery_boy') {
+                    // Show standard delivery charges (existing flow)
+                    $('#standard_delivery_section').show();
+
+                    // Trigger existing delivery charge calculation
+                    getStandardDeliveryCharges(address_id);
+                }
+
+            } else {
+                // Delivery not available
+                $('#delivery_unavailable_section').show();
+                $('#place_order_btn').attr('disabled', true);
+            }
+        },
+        error: function () {
+            Toast.fire({
+                icon: 'error',
+                title: 'Failed to load shipping options'
+            });
+        }
+    });
+}
+
+function displayShippingQuotes(quotes) {
+    console.log(quotes);
+    if (!quotes || quotes.length === 0) {
+        $('#quotes_container').html('<div class="text-center py-4">No shipping quotes available</div>');
+        return;
+    }
+
+    var html = '';
+    quotes.forEach(function (quote, index) {
+        var price = parseFloat(quote.price);
+        var additional_charges = [];
+        var total_additional = 0;
+
+        // Parse additional_charges safely
+        if (quote.additional_charges) {
+            try {
+                var parsed;
+                if (Array.isArray(quote.additional_charges)) {
+                    parsed = quote.additional_charges;
+                } else if (typeof quote.additional_charges === 'string') {
+                    parsed = JSON.parse(quote.additional_charges);
+                } else {
+                    parsed = quote.additional_charges;
+                }
+
+                // Handle both array and object formats
+                if (Array.isArray(parsed)) {
+                    additional_charges = parsed;
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                    // Convert object to array format: {key: value} -> [{name: key, amount: value}]
+                    additional_charges = Object.keys(parsed).map(function (key) {
+                        return {
+                            name: key,
+                            amount: parsed[key]
+                        };
+                    });
+                }
+            } catch (e) {
+                console.error('Error parsing additional_charges:', e);
+                additional_charges = [];
+            }
+        }
+
+        // Calculate total additional charges
+        if (Array.isArray(additional_charges) && additional_charges.length > 0) {
+            additional_charges.forEach(function (charge) {
+                total_additional += parseFloat(charge.amount || 0);
+            });
+        }
+
+        var total_price = price + total_additional;
+        var isChecked = index === 0;
+        var cardActiveClass = isChecked ? ' active' : '';
+
+        html += '<div class="shipping-option-card' + cardActiveClass + '">';
+
+        // Radio input (hidden)
+        html += '<input type="radio" class="shipping-option-radio" name="shipping_quote" id="quote_' + quote.id + '" value="' + quote.id + '" ';
+        html += 'data-company-id="' + quote.shipping_company_id + '" ';
+        html += 'data-price="' + total_price.toFixed(2) + '" ';
+        html += 'data-cod="' + quote.cod_available + '" ';
+        html += (isChecked ? 'checked' : '') + '>';
+
+        // Label (entire card is clickable)
+        html += '<label for="quote_' + quote.id + '" class="shipping-option-label">';
+
+        // Header: Company name and total price
+        html += '<div class="shipping-option-header">';
+        html += '<div class="company-name">' + quote.company_name + '</div>';
+        html += '<div class="total-price">' + currency + total_price.toFixed(2) + '</div>';
+        html += '</div>';
+
+        // Details section
+        html += '<div class="shipping-option-details">';
+
+        // Left side: pricing breakdown
+        html += '<div class="details-left">';
+
+        // Delivery time
+        html += '<div class="detail-row">';
+        html += '<span class="detail-label">Delivery:</span>';
+        html += '<span class="detail-value">' + quote.eta_text + ' days</span>';
+        html += '</div>';
+
+        // Base price
+        html += '<div class="detail-row">';
+        html += '<span class="detail-label">Base Price:</span>';
+        html += '<span class="detail-value">' + currency + price.toFixed(2) + '</span>';
+        html += '</div>';
+
+        // Additional charges (with special styling)
+        if (Array.isArray(additional_charges) && additional_charges.length > 0) {
+            additional_charges.forEach(function (charge) {
+                html += '<div class="detail-row additional-charge">';
+                html += '<span class="detail-label">+ ' + charge.name + ':</span>';
+                html += '<span class="detail-value">' + currency + parseFloat(charge.amount).toFixed(2) + '</span>';
+                html += '</div>';
+            });
+        }
+
+        html += '</div>';
+
+        // Right side: COD badge
+        html += '<div class="details-right">';
+        if (quote.cod_available == 1) {
+            html += '<span class="cod-badge available">COD Available</span>';
+        } else {
+            html += '<span class="cod-badge unavailable">COD Not Available</span>';
+        }
+        html += '</div>';
+
+        html += '</div>'; // Close shipping-option-details
+        html += '</label>';
+        html += '</div>'; // Close shipping-option-card
+    });
+
+    $('#quotes_container').html(html);
+
+    // Add click handler to update active state
+    $('input[name="shipping_quote"]').on('change', function () {
+        $('.shipping-option-card').removeClass('active');
+        $(this).closest('.shipping-option-card').addClass('active');
+    });
+
+    // Select first quote by default
+    if (quotes.length > 0) {
+        var firstQuote = quotes[0];
+        var firstPrice = parseFloat(firstQuote.price);
+        var firstAdditional = 0;
+
+        if (firstQuote.additional_charges) {
+            try {
+                var parsed;
+                if (Array.isArray(firstQuote.additional_charges)) {
+                    parsed = firstQuote.additional_charges;
+                } else if (typeof firstQuote.additional_charges === 'string') {
+                    parsed = JSON.parse(firstQuote.additional_charges);
+                } else {
+                    parsed = firstQuote.additional_charges;
+                }
+
+                // Handle both array and object formats
+                var charges = [];
+                if (Array.isArray(parsed)) {
+                    charges = parsed;
+                } else if (typeof parsed === 'object' && parsed !== null) {
+                    charges = Object.keys(parsed).map(function (key) {
+                        return {
+                            name: key,
+                            amount: parsed[key]
+                        };
+                    });
+                }
+
+                if (Array.isArray(charges)) {
+                    charges.forEach(function (charge) {
+                        firstAdditional += parseFloat(charge.amount || 0);
+                    });
+                }
+            } catch (e) {
+                console.error('Error parsing additional_charges for first quote:', e);
+            }
+        }
+
+        selectShippingQuote(
+            firstQuote.id,
+            firstQuote.shipping_company_id,
+            firstPrice + firstAdditional,
+            firstQuote.cod_available
+        );
+    }
+}
+
+/**
+ * Handle quote selection
+ */
+$(document).on('change', '.shipping-option-radio', function () {
+    var $radio = $(this);
+    var $card = $radio.closest('.shipping-option-card');
+    var quote_id = $radio.val();
+    var company_id = $radio.attr('data-company-id');      // Use attr() instead of data()
+    var price = parseFloat($radio.attr('data-price'));    // Use attr() instead of data()
+    var cod_available = $radio.attr('data-cod');          // Use attr() instead of data()
+
+    console.log('Quote selected:', { quote_id, company_id, price, cod_available }); // Debug log
+
+    // Visual feedback
+    $('.shipping-option-card').removeClass('active');
+    $card.addClass('active');
+
+    selectShippingQuote(quote_id, company_id, price, cod_available);
+});
+
+// Also handle clicking anywhere on the label
+$(document).on('click', '.shipping-option-label', function (e) {
+    // The label click will automatically trigger the radio button
+    // No additional code needed
+});
+// Also handle clicking anywhere on the label
+$(document).on('click', '.shipping-option-label', function (e) {
+    // The label click will automatically trigger the radio button
+    // No additional code needed
+});
+
+/**
+ * Set selected quote and update totals
+ */
+function selectShippingQuote(quote_id, company_id, price, cod_available) {
+    console.log(price);
+    $('#selected_quote_id').val(quote_id);
+    $('#shipping_company_id').val(company_id);
+
+    // Update delivery charges
+    $('.delivery_charge_with_cod').text(price.toFixed(2)).val(price);
+    $('.delivery_charge_without_cod').text(price.toFixed(2)).val(price);
+
+    // Update final total
+    updateFinalTotal();
+
+    // Handle COD availability
+    if (cod_available == 0) {
+        $('#cod').prop('disabled', true).prop('checked', false);
+        $('#cod').attr('title', 'COD not available for selected shipping option');
+    } else {
+        $('#cod').prop('disabled', false);
+        $('#cod').attr('title', '');
+    }
+
+    // Enable place order button
+    $('#place_order_btn').attr('disabled', false);
+}
+
+/**
+ * Update final total amount
+ */
+function updateFinalTotal() {
+    var sub_total = parseFloat($('#sub_total').val().replace(',', '')) || 0;
+    var delivery_charge = parseFloat($('.delivery_charge_without_cod').val().replace(',', '')) || 0;
+    var wallet_used = parseFloat($('.wallet_used').text().replace(',', '')) || 0;
+    var promocode_amount = parseFloat($('#promocode_amount').text().replace(',', '')) || 0;
+
+    // Check payment method
+    var selected_payment = $('input[name="payment_method"]:checked').val();
+    if (selected_payment === 'COD') {
+        delivery_charge = parseFloat($('.delivery_charge_with_cod').val().replace(',', '')) || 0;
+    }
+
+    var final_total = sub_total + delivery_charge - wallet_used - promocode_amount;
+
+    $('#final_total').text(final_total.toFixed(2));
+    $('#amount').val(final_total);
+}
+
+/**
+ * Get standard delivery charges (existing flow for delivery_boy)
+ */
+function getStandardDeliveryCharges(address_id) {
+    var sub_total = $('#sub_total').val();
+    var total = $('#temp_total').val();
+
+    $.ajax({
+        type: 'POST',
+        data: {
+            [csrfName]: csrfHash,
+            'address_id': address_id,
+            'total': total,
+        },
+        url: base_url + 'cart/get-delivery-charge',
+        dataType: 'json',
+        success: function (result) {
+            csrfName = result.csrfName;
+            csrfHash = result.csrfHash;
+
+            $('.delivery_charge_with_cod').html(result.delivery_charge_with_cod).val(result.delivery_charge_with_cod);
+            $('.delivery_charge_without_cod').html(result.delivery_charge_without_cod).val(result.delivery_charge_without_cod);
+            $('.estimate_date').html(result.estimate_date);
+
+            updateFinalTotal();
+        }
+    });
+}
+
+// ============================================
+// TRIGGER ON ADDRESS CHANGE
+// ============================================
+
+// Modify existing address selection handler
+var originalAddressSubmit = $(".address_modal").find('.submit').clone(true);
+
+$(".address_modal").off('click', '.submit');
+$(".address_modal").on('click', '.submit', function (event) {
+    event.preventDefault();
+
+    var index = $('input[class="select-address form-check-input m-0"][type="radio"]:checked').data('index');
+    var address = addresses[index];
+
+    // Update address display
+    $('#address-name-type').html(address.name + ' - ' + address.type);
+    $('#address-full').html(address.address + ' , ' + address.area + ' , ' + address.city);
+    $('#address-country').html(address.state + ' , ' + address.country + ' - ' + address.pincode);
+    $('#address-mobile').html(address.mobile);
+    $('#address_id').val(address.id);
+    $('#mobile').val(address.mobile);
+
+    $('.address_modal').modal('hide');
+
+    // Fetch shipping options (quotes or standard)
+    fetchShippingQuotes(address.id);
+});
+
+// ============================================
+// INITIALIZE ON PAGE LOAD
+// ============================================
+
+$(document).ready(function () {
+    var initial_address_id = $('#address_id').val();
+
+    if (initial_address_id && $('#product_type').val() !== 'digital_product') {
+        fetchShippingQuotes(initial_address_id);
+    }
+});
+
+// Update final total when payment method changes
+$(document).on('change', 'input[name="payment_method"]', function () {
+    updateFinalTotal();
+});
+
+// Update final total when wallet checkbox changes
+$(document).on('change', '#wallet_balance', function () {
+    setTimeout(updateFinalTotal, 100);
+});

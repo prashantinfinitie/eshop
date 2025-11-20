@@ -753,7 +753,7 @@ Defined Methods:-
     public function forgot_password()
     {
         /* Parameters to be passed
-            mobile_no:7894561235            
+            mobile_no:7894561235
             new: pass@123
         */
 
@@ -908,7 +908,7 @@ Defined Methods:-
     public function get_settings()
     {
         /*
-            type : payment_method // { default : all  } optional            
+            type : payment_method // { default : all  } optional
             user_id:  15 { optional }
         */
         if (!$this->verify_token()) {
@@ -1054,8 +1054,8 @@ Defined Methods:-
         /*
             user_type:admin
             user_id:1
-            ticket_id:1	
-            message:test	
+            ticket_id:1
+            message:test
             attachments[]:files  {optional} {type allowed -> image,video,document,spreadsheet,archive}
         */
 
@@ -1375,7 +1375,7 @@ Defined Methods:-
     {
         /*
         20. get_messages
-        ticket_id: 1001            
+        ticket_id: 1001
         user_type: 1001                // { optional}
         user_id: 1001                // { optional}
         search : Search keyword // { optional }
@@ -1480,8 +1480,8 @@ Defined Methods:-
     public function delete_order_receipt()
     {
         /*
-         id=57 
-        
+         id=57
+
         */
 
         if (!$this->verify_token()) {
@@ -1544,12 +1544,12 @@ Defined Methods:-
 
     public function get_order_tracking()
     {
-        /* 
+        /*
         limit:25            // { default - 25 } optional
         offset:0            // { default - 0 } optional
         sort:               // { id } optional
         order:DESC/ASC      // { default - DESC } optional
-        search:value        // {optional} 
+        search:value        // {optional}
         */
         if (!$this->verify_token()) {
             return false;
@@ -1580,7 +1580,7 @@ Defined Methods:-
     public function edit_order_tracking()
     {
         /*
-            order_id:57 
+            order_id:57
             order_item_id:123
             courier_agency:asd agency
             tracking_id:t_id123
@@ -1640,10 +1640,10 @@ Defined Methods:-
     public function update_receipt_status()
     {
         /*
-            order_id:57 
+            order_id:57
             user_id:123
-            status:1        // { 0:pending|1:rejected|2:accepted }  
-           
+            status:1        // { 0:pending|1:rejected|2:accepted }
+
         */
 
 

@@ -47,7 +47,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" />
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?= base_url('assets/admin/custom/custom.css') ?>">
-
+    <!-- pages -->
+    <link rel="stylesheet" href="<?= base_url('assets/shipping_company/css/quotes.css') ?>">
     <!-- jQuery -->
     <script src="<?= base_url('assets/admin/js/jquery.min.js') ?>"></script>
     <!-- Star rating js -->

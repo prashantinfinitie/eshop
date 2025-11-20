@@ -2120,6 +2120,8 @@ $(document).on('submit', '.container-fluid .form-submit-event', function (e) {
             csrfName = result['csrfName'];
             csrfHash = result['csrfHash'];
 
+
+            console.log(result)
             if (result['error'] == true) {
 
                 error_box.addClass("msg_error rounded p-3").removeClass('d-none msg_success');
@@ -2157,7 +2159,6 @@ $(document).on('submit', '.container-fluid .form-submit-event', function (e) {
                 if ($('.form-submit-event').hasClass('add_shipping_company')) {
                     window.location.href = base_url + 'admin/shipping-companies/manage_shipping_company';
                 }
-
 
                 // SHIPPING COMPANY - Don't redirect, just refresh table
                 if ($('.form-submit-event').hasClass('add_shipping_company')) {
@@ -12396,6 +12397,12 @@ $(document).ready(function () {
     });
 });
 
+
+
+
+
+
+
 // Shipping company
 
 
@@ -12504,6 +12511,7 @@ $(document).on('click', '#delete-shipping-company', function () {
                 })
                     .done(function (response, textStatus) {
                         if (response.error == false) {
+                            console.log(response);
                             Swal.fire('Deleted!', response.message, 'success');
                             $('table').bootstrapTable('refresh');
                         } else {
@@ -12593,17 +12601,53 @@ $(document).on('shown.bs.modal', function (e) {
 });
 
 
+
+
+$(document).on('submit', "#add_shipping_company_form", function (e) {
+    e.preventDefault();
+
+    var data = new FormData(this);
+    data.append(csrfName, csrfHash);
+    data.append("country_code", $(".selected-dial-code").text());
+    $.ajax({
+        type: "POST",
+        url: base_url + 'shipping_company/login/create_shipping_company',
+        data: data,
+        processData: !1,
+        contentType: !1,
+        cache: !1,
+        dataType: "json",
+
+        success: function (response) {
+
+            csrfName = response.csrfName,
+                csrfHash = response.csrfHash;
+            if (response.error == true) {
+                iziToast.error({
+                    message: response.message,
+                });
+
+            } else {
+                iziToast.success({
+                    message: response.message,
+                });
+                setTimeout(function () {
+                    window.location.href = base_url + 'shipping_company/login';
+                }, 3000)
+
+            }
+        }
+    })
+});
+
+
+
 // cash collection and fund transfer
 
 // JavaScript for Shipping Company Cash Collection
 
 $(document).ready(function () {
-    // // Date picker initialization
-    // $('#datepicker').daterangepicker({
-    //     locale: {
-    //         format: 'DD-MM-YYYY'
-    //     }
-    // });
+
 
     // Handle edit cash collection button
     $(document).on('click', '.edit_cash_collection_btn', function () {

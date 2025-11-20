@@ -17,7 +17,7 @@ $auth_settings = get_settings('authentication_settings', true);
                 <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
                 <li class="nav-item has-treeview">
-                    <a href="<?= base_url('delivery-boy/home') ?>" class="nav-link">
+                    <a href="<?= base_url('shipping_company/home') ?>" class="nav-link">
                         <i class="nav-icon fas fa-home"></i>
                         <p>
                             Home
@@ -25,15 +25,23 @@ $auth_settings = get_settings('authentication_settings', true);
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= base_url('delivery-boy/orders/') ?>" class="nav-link">
+                    <a href="<?= base_url('shipping_company/orders/') ?>" class="nav-link">
                         <i class="nav-icon fas fa-shopping-cart"></i>
                         <p>
                             Orders
                         </p>
                     </a>
                 </li>
+
+                <!-- Quotes menu item added here -->
                 <li class="nav-item">
-                    <a href="<?= base_url('delivery-boy/fund-transfer/') ?>" class="nav-link">
+                    <a href="<?= base_url('shipping_company/quotes') ?>" class="nav-link">
+                        <i class="nav-icon fas fa-shipping-fast"></i>
+                        <p>Quotes</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="<?= base_url('shipping_company/fund-transfer/') ?>" class="nav-link">
                         <i class="fa fa-rupee-sign nav-icon"></i>
                         <p>
                             Fund Transfers
@@ -41,25 +49,25 @@ $auth_settings = get_settings('authentication_settings', true);
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= base_url('delivery-boy/fund-transfer/manage-cash') ?>" class="nav-link">
+                    <a href="<?= base_url('shipping_company/fund-transfer/manage-cash') ?>" class="nav-link">
                         <i class="fas fa-money-bill-alt nav-icon "></i>
                         <p> Cash Collection </p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="<?= base_url('delivery-boy/fund-transfer/manage-transactions') ?>" class="nav-link">
+                    <a href="<?= base_url('shipping_company/fund-transfer/manage-transactions') ?>" class="nav-link">
                         <i class="fas fa-money-check nav-icon "></i>
                         <p> Transactions </p>
                     </a>
                 </li>
                 <li class="nav-item has-treeview">
-                    <a href="<?= base_url('delivery-boy/policy') ?>" class="nav-link">
+                    <a href="<?= base_url('shipping_company/policy') ?>" class="nav-link">
                         <i class="fa fa-lock nav-icon"></i>
                         <p>Privacy Policy</p>
                     </a>
                 </li>
                 <li class="nav-item has-treeview">
-                    <a href="<?= base_url('delivery-boy/policy/terms_conditions') ?>" class="nav-link">
+                    <a href="<?= base_url('shipping_company/policy/terms_conditions') ?>" class="nav-link">
                         <i class="fa fa-exclamation-triangle nav-icon"></i>
                         <p>Terms & Conditions</p>
                     </a>
