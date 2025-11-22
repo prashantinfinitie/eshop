@@ -312,7 +312,7 @@ class Orders extends CI_Controller
                     $message = output_escaping(trim($data, '"'));
                     $customer_msg = (!empty($custom_notification)) ? $message :  'Hello Dear ' . $user_res[0]['username'] . 'Order status updated to' . $_GET['status'] . ' for your order ID #' . $order_id . ' please take note of it! Thank you for shopping with us. Regards ' . $app_name . '';
 
-                    //user get notification for order 
+                    //user get notification for order
                     if (!empty($user_res[0]['fcm_id']) && isset($firebase_project_id) && isset($service_account_file) && !empty($firebase_project_id) && !empty($service_account_file)) {
                         $fcmMsg = array(
                             'title' => (!empty($custom_notification)) ? $custom_notification[0]['title'] : "Order status updated",
@@ -336,7 +336,7 @@ class Orders extends CI_Controller
                         send_notification($fcmMsg, $fcm_ids, $fcmMsg);
                     }
 
-                    //seller get notification for order 
+                    //seller get notification for order
                     if (!empty($seller_res[0]['fcm_id']) && isset($firebase_project_id) && isset($service_account_file) && !empty($firebase_project_id) && !empty($service_account_file)) {
                         $fcmMsg = array(
                             'title' => (!empty($custom_notification)) ? $custom_notification[0]['title'] : "Order status updated",

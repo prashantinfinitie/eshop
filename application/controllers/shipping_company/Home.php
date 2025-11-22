@@ -26,7 +26,7 @@ class Home extends CI_Controller
             $settings = get_settings('system_settings', true);
             $this->data['curreny'] = get_settings('currency');
             $this->data['title'] = 'Shipping Company Panel | ' . $settings['app_name'];
-            $this->data['order_counter'] = $this->Home_model->count_new_orders();
+            $this->data['order_counter'] = $this->Home_model->count_new_orders_for_shipping_company($user_id);
             $this->data['balance'] = ($user_res[0]['balance'] == NULL) ? 0 : $user_res[0]['balance'];
             $this->data['bonus'] = ($user_res[0]['bonus'] == NULL)  ? 0 : $user_res[0]['bonus'];
             $this->data['username'] =  $user_res[0]['username'];

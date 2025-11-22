@@ -11,9 +11,22 @@ class Home_model extends CI_Model
             $user_id = $this->session->userdata('user_id');
             $this->db->where('c.delivery_boy_id', $user_id);
         }
+
         $res = $this->db->get('`consignments` c')->result_array();
         return $res[0]['counter'];
     }
+
+    public function count_new_orders_for_shipping_company($shipping_company_id)
+    {
+        return $this->db->select("COUNT(oi.id) AS counter")
+            ->from("order_items oi")
+            ->join("orders o", "o.id = oi.order_id", "left")
+            ->where("o.shipping_company_id", $shipping_company_id)
+            ->where_in("oi.active_status", ['received', 'processed', 'awaiting'])
+            ->get()
+            ->row_array()['counter'];
+    }
+
     public function count_dashboard_orders($type = '')
     {
         $res = $this->db->select('count(distinct oi.order_id) as counter');
@@ -68,23 +81,23 @@ class Home_model extends CI_Model
 
     public function count_products_stock_low_status($seller_id = "")
     {
-        
+
         $count_res = $this->db->select(' COUNT( distinct(p.id)) as `total` ')->join('product_variants', 'product_variants.product_id = p.id')
             ->join("seller_data sd", "p.seller_id=sd.user_id ");
         $where = "p.stock_type is  NOT NULL";
 
         $count_res->where($where);
         $count_res->group_Start();
-        
-        $count_res->where('(CASE 
-            WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit 
-            ELSE p.stock <= sd.low_stock_limit 
+
+        $count_res->where('(CASE
+            WHEN p.low_stock_limit > 0 THEN p.stock <= p.low_stock_limit
+            ELSE p.stock <= sd.low_stock_limit
         END)');
         $count_res->where('p.availability  =', '1');
-       
-        $count_res->or_where('(CASE 
-            WHEN p.low_stock_limit > 0 THEN product_variants.stock <= p.low_stock_limit 
-            ELSE product_variants.stock <= sd.low_stock_limit 
+
+        $count_res->or_where('(CASE
+            WHEN p.low_stock_limit > 0 THEN product_variants.stock <= p.low_stock_limit
+            ELSE product_variants.stock <= sd.low_stock_limit
         END)');
         $count_res->where('product_variants.availability  =', '1');
         $count_res->group_End();

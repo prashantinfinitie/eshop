@@ -33,10 +33,18 @@ class Migration_add_shipping_columns_to_orders extends CI_Migration
             ],
         ];
         $this->dbforge->add_column('orders', $fields3);
+        // Add indexes
+        $this->db->query("CREATE INDEX idx_orders_shipping_company_id ON orders (shipping_company_id)");
+        $this->db->query("CREATE INDEX idx_orders_selected_quote_id ON orders (selected_quote_id)");
     }
 
     public function down()
     {
+
+        // Remove indexes
+        $this->db->query("DROP INDEX idx_orders_shipping_company_id ON orders");
+        $this->db->query("DROP INDEX idx_orders_selected_quote_id ON orders");
+
         $this->dbforge->drop_column('orders', 'shipping_quote_snapshot');
         $this->dbforge->drop_column('orders', 'shipping_company_id');
         $this->dbforge->drop_column('orders', 'selected_quote_id');

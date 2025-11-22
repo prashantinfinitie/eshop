@@ -1758,6 +1758,8 @@ function fetchShippingQuotes(address_id) {
             $('#quotes_container').html('<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>Loading shipping options...</p></div>');
         },
         success: function (response) {
+
+            console.log(response);
             csrfName = response.csrfName;
             csrfHash = response.csrfHash;
 

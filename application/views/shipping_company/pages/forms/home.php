@@ -96,86 +96,42 @@
                                         </select>
                                     </div>
 
-                                    <div class="form-group col-md-4 d-flex align-items-center pt-4">
-                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="status_date_wise_search()">Filter</button>
+                                    <div class="form-group d-flex align-items-center pt-4">
+                                        <button type="button" class="btn btn-default mt-2" onclick="status_date_wise_search()">Filter</button>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="card content-area p-4">
                                 <div class="card-innr">
-                                    <ul class="nav nav-tabs" role="tablist">
-                                        <li class="nav-item">
-                                            <a class="nav-link active" data-toggle="tab" href="#orders_table">Orders</a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link" data-toggle="tab" href="#order_items_table">Return Order</a>
-                                        </li>
-                                    </ul>
-                                    <div class="tab-content">
-                                        <div id="orders_table" class="tab-pane active"><br>
-                                            <table class='table-striped' data-toggle="table" data-url="<?= base_url('shipping_company/orders/consignment_view') ?>"
-                                                data-click-to-select="true" data-side-pagination="server" data-pagination="true" data-page-list="[5, 10, 20, 50, 100, 200]"
-                                                data-search="true" data-show-columns="true" data-show-refresh="true" data-trim-on-search="false" data-sort-name="id"
-                                                data-sort-order="desc" data-mobile-responsive="true" data-toolbar="" data-show-export="true" data-maintain-selected="true"
-                                                data-export-types='["txt","excel","csv"]' data-export-options='{
+                                    <h4">Orders</h3>
+                                        <div class="tab-content">
+                                            <div id="orders_table" class="tab-pane active"><br>
+                                                <table class='table-striped' data-toggle="table" data-url="<?= base_url('shipping_company/orders/view_orders') ?>"
+                                                    data-click-to-select="true" data-side-pagination="server" data-pagination="true" data-page-list="[5, 10, 20, 50, 100, 200]"
+                                                    data-search="true" data-show-columns="true" data-show-refresh="true" data-trim-on-search="false" data-sort-name="id"
+                                                    data-sort-order="desc" data-mobile-responsive="true" data-toolbar="" data-show-export="true" data-maintain-selected="true"
+                                                    data-export-types='["txt","excel","csv"]' data-export-options='{
                                                     "fileName": "shipping-orders-list",
                                                     "ignoreColumn": ["state"]
                                                    }' data-query-params="home_query_params">
-                                                <thead>
-                                                    <tr>
-                                                        <th data-field="id" data-sortable='true' data-footer-formatter="totalFormatter">ID</th>
-                                                        <th data-field="order_id" data-sortable='true'>Order ID</th>
-                                                        <th data-field="username" data-sortable='true'>Buyer Name</th>
-                                                        <th data-field="mobile" data-sortable='false'>Buyer Mobile</th>
-                                                        <th data-field="product_name" data-sortable='true'>Product Name</th>
-                                                        <th data-field="quantity" data-sortable='false'>Quantity</th>
-                                                        <th data-field="status" data-sortable='true'>Status</th>
-                                                        <th data-field="payment_method" data-sortable='true'>Payment Method</th>
-                                                        <th data-field="order_date" data-sortable='true'>Order Date</th>
-                                                        <th data-field="operate" data-sortable="false">Action</th>
-                                                    </tr>
-                                                </thead>
-                                            </table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th data-field="id" data-sortable='true' data-footer-formatter="totalFormatter">ID</th>
+                                                            <th data-field="order_id" data-sortable='true'>Order ID</th>
+                                                            <th data-field="username" data-sortable='true'>Buyer Name</th>
+                                                            <th data-field="mobile" data-sortable='false'>Buyer Mobile</th>
+                                                            <th data-field="product_name" data-sortable='true'>Product Name</th>
+                                                            <th data-field="quantity" data-sortable='false'>Quantity</th>
+                                                            <th data-field="active_status" data-sortable='true'>Status</th>
+                                                            <th data-field="payment_method" data-sortable='true'>Payment Method</th>
+                                                            <th data-field="date_added" data-sortable='true'>Order Date</th>
+                                                            <th data-field="operate" data-sortable="false">Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                </table>
+                                            </div>
                                         </div>
-
-                                        <div id="order_items_table" class="tab-pane fade"><br>
-                                            <table class='table-striped' data-toggle="table" data-url="<?= base_url('shipping_company/orders/view_orders') ?>"
-                                                data-click-to-select="true" data-side-pagination="server" data-pagination="true" data-page-list="[5, 10, 20, 50, 100, 200]"
-                                                data-search="true" data-show-columns="true" data-show-refresh="true" data-trim-on-search="false" data-sort-name="oi.id"
-                                                data-sort-order="desc" data-mobile-responsive="true" data-toolbar="" data-show-export="true" data-maintain-selected="true"
-                                                data-export-types='["txt","excel","csv"]' data-export-options='{"fileName": "order-item-list","ignoreColumn": ["state"] }'
-                                                data-query-params="orders_query_params">
-                                                <thead>
-                                                    <tr>
-                                                        <th data-field="id" data-sortable='true' data-footer-formatter="totalFormatter">ID</th>
-                                                        <th data-field="order_item_id" data-sortable='true'>Order Item ID</th>
-                                                        <th data-field="order_id" data-sortable='true'>Order ID</th>
-                                                        <th data-field="user_id" data-sortable='true' data-visible="false">User ID</th>
-                                                        <th data-field="seller_id" data-sortable='true' data-visible="false">Seller ID</th>
-                                                        <th data-field="is_credited" data-sortable='true' data-visible="false">Commission</th>
-                                                        <th data-field="quantity" data-sortable='true' data-visible="false">Quantity</th>
-                                                        <th data-field="username" data-sortable='true'>User Name</th>
-                                                        <th data-field="seller_name" data-sortable='true'>Seller Name</th>
-                                                        <th data-field="product_name" data-sortable='true'>Product Name</th>
-                                                        <th data-field="mobile" data-sortable='true' data-visible='false'>Mobile</th>
-                                                        <th data-field="sub_total" data-sortable='true' data-visible="true">Total(<?= ($curreny) ?>)</th>
-                                                        <th data-field="delivery_boy" data-sortable='true' data-visible='false'>Deliver By</th>
-                                                        <th data-field="delivery_boy_id" data-sortable='true' data-visible='false'>Delivery Boy Id</th>
-                                                        <th data-field="product_variant_id" data-sortable='true' data-visible='false'>Product Variant Id</th>
-                                                        <th data-field="delivery_date" data-sortable='true' data-visible='false'>Delivery Date</th>
-                                                        <th data-field="delivery_time" data-sortable='true' data-visible='false'>Delivery Time</th>
-                                                        <th data-field="updated_by" data-sortable='true' data-visible="false">Updated by</th>
-                                                        <th data-field="active_status" data-sortable='true' data-visible='true'>Active Status</th>
-                                                        <th data-field="transaction_status" data-sortable='true' data-visible='false'>Transaction Status</th>
-                                                        <th data-field="date_added" data-sortable='true'>Order Date</th>
-                                                        <th data-field="operate" data-sortable="false">Action</th>
-                                                    </tr>
-                                                </thead>
-                                            </table>
-                                        </div>
-
-                                    </div>
                                 </div>
                             </div>
                         </div><!-- .card-innr -->

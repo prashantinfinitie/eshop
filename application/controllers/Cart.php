@@ -966,12 +966,16 @@ class Cart extends CI_Controller
                 $delivery_type = $response_array['availability_data'][0]['delivery_by'];
 
                 $_POST['is_shiprocket_order'] = (isset($response_array['availability_data']) && !empty($response_array['availability_data']) && $delivery_type == 'standard_shipping') ? '1' : '0';
+                // print_r($_POST);
 
-                // Add shipping company data BEFORE placing order
+                $res = $this->order_model->place_order($_POST);
+
+                // Add shipping company data if applicable
                 if (
                     isset($_POST['provider_type']) && $_POST['provider_type'] === 'company' &&
                     isset($_POST['selected_quote_id']) && !empty($_POST['selected_quote_id'])
                 ) {
+
                     // Fetch the selected quote for snapshot
                     $this->load->model('Shipping_company_quotes_model');
                     $quote = $this->db->where('id', $_POST['selected_quote_id'])
@@ -984,9 +988,6 @@ class Cart extends CI_Controller
                         $_POST['shipping_quote_snapshot'] = json_encode($quote);
                     }
                 }
-
-                // NOW place the order with all data
-                $res = $this->order_model->place_order($_POST);
 
                 if (isset($res["error"]) && $res["error"]) {
                     $this->response['error'] = true;
@@ -1263,47 +1264,117 @@ class Cart extends CI_Controller
         $system_settings = $this->data['settings'];
 
         $cart = $this->cart_model->get_user_cart($this->data['user']->id);
-        if ($cart[0]['type'] == 'digital_product') {
+
+        // Digital products = no delivery charge
+        if (!empty($cart) && $cart[0]['type'] == 'digital_product') {
             $this->response['delivery_charge_with_cod'] = '0';
             $this->response['delivery_charge_without_cod'] = '0';
-            return false;
+            $this->response['estimate_date'] = "";
+            $this->response['error'] = false;
+            $this->response['message'] = "Digital product - No delivery charge";
+            print_r(json_encode($this->response));
+            return;
         }
-        $standard_shipping_cart = $local_shipping_cart = [];
+
         $this->response['delivery_charge_with_cod'] = $this->response['delivery_charge_without_cod'] = 0;
         $this->response['estimate_date'] = "";
+        $this->response['provider_type'] = 'unknown'; // will be updated later
+
         $address_id = $this->input->post('address_id', true);
 
-        if (isset($address_id) && !empty($address_id)) {
+        // If no address selected at all
+        if (empty($address_id)) {
+            $this->response['error'] = true;
+            $this->response['message'] = "Please select address.";
+            $this->response['delivery_available'] = false;
+            print_r(json_encode($this->response));
+            return;
+        }
 
-            $area_id = fetch_details('addresses', ['id' => $address_id], ['area_id', 'area', 'pincode', 'city']);
-            $zipcode = $area_id[0]['pincode'];
-            $zipcode_id = fetch_details('zipcodes', ['zipcode' => $zipcode], 'id')[0];
+        // Address is selected → proceed
+        $area_id = fetch_details('addresses', ['id' => $address_id], ['area_id', 'area', 'pincode', 'city']);
+        if (empty($area_id)) {
+            $this->response['error'] = true;
+            $this->response['message'] = "Invalid address.";
+            print_r(json_encode($this->response));
+            return;
+        }
+
+        $zipcode = $area_id[0]['pincode'];
+        $city    = $area_id[0]['city'];
+
+        // Get provider type from zipcodes table
+        $zipcode_data = fetch_details('zipcodes', ['zipcode' => $zipcode], 'id, provider_type');
+
+        if (empty($zipcode_data)) {
+            $this->response['error'] = true;
+            $this->response['message'] = "Delivery not available for this pincode.";
+            $this->response['delivery_available'] = false;
+            print_r(json_encode($this->response));
+            return;
+        }
+
+        $provider_type = $zipcode_data[0]['provider_type'] ?? 'delivery_boy';
+
+        // Set provider type early so frontend knows
+        $this->response['provider_type'] = $provider_type;
+
+        // CASE 1: Shipping Company handles this pincode
+        if ($provider_type === 'company') {
+            $this->load->model('Shipping_company_quotes_model');
+            $quotes = $this->Shipping_company_quotes_model->get_active_quotes_by_zipcode($zipcode);
+
+            if (!empty($quotes)) {
+                $this->response['error'] = false;
+                $this->response['delivery_available'] = true;
+                $this->response['quotes'] = $quotes;
+                $this->response['message'] = "Shipping company quotes available.";
+                // Keep delivery charges as 0 — will be set by JS when user selects a quote
+                $this->response['delivery_charge_with_cod'] = 0;
+                $this->response['delivery_charge_without_cod'] = 0;
+            } else {
+                $this->response['error'] = true;
+                $this->response['message'] = "No active shipping quotes for this pincode.";
+                $this->response['delivery_available'] = false;
+            }
+
+            $this->response['csrfName'] = $this->security->get_csrf_token_name();
+            $this->response['csrfHash'] = $this->security->get_csrf_hash();
+            print_r(json_encode($this->response));
+            return;
+        }
+
+        // CASE 2: Standard delivery boy / local / shiprocket flow (existing logic)
+        if ($provider_type === 'delivery_boy') {
+            // Run your original deliverability checks
             $product_availability = [];
-            $city = $area_id[0]['city'];
-            $city_id = fetch_details('cities', ['name' => $city], 'id');
-            $city_id = $city_id[0]['id'];
+            $standard_shipping_cart = $local_shipping_cart = [];
+
+            // ... [Keep all your existing code for checking deliverability, parcels, etc.] ...
+            // I'm keeping only the essential part here to avoid duplication
+
+            $area_id_data = fetch_details('addresses', ['id' => $address_id], ['area_id', 'area', 'pincode', 'city']);
+            $zipcode_id = fetch_details('zipcodes', ['zipcode' => $zipcode], 'id')[0]['id'] ?? '';
+            $city_id = fetch_details('cities', ['name' => $city], 'id')[0]['id'] ?? '';
+
             if ((isset($shipping_method['pincode_wise_deliverability']) && $shipping_method['pincode_wise_deliverability'] == 1) ||
                 (isset($shipping_method['local_shipping_method']) && isset($shipping_method['shiprocket_shipping_method']) &&
                     $shipping_method['local_shipping_method'] == 1 && $shipping_method['shiprocket_shipping_method'] == 1)
             ) {
-
-                $product_availability = check_cart_products_delivarable($this->data['user']->id, $area_id[0]['area_id'], $zipcode, $zipcode_id['id']);
+                $product_availability = check_cart_products_delivarable($this->data['user']->id, $area_id_data[0]['area_id'], $zipcode, $zipcode_id);
             }
             if (isset($shipping_method['city_wise_deliverability']) && $shipping_method['city_wise_deliverability'] == 1 && $shipping_method['shiprocket_shipping_method'] != 1) {
-
-                $product_availability = check_cart_products_delivarable($this->data['user']->id, $area_id[0]['area_id'], '', '', $city, $city_id);
+                $product_availability = check_cart_products_delivarable($this->data['user']->id, $area_id_data[0]['area_id'], '', '', $city, $city_id);
             }
 
-            $product_not_delivarable = array_filter((array)$product_availability, function ($product) {
-                return ($product['is_deliverable'] == false);
-            });
+            $product_not_delivarable = array_filter((array)$product_availability, fn($product) => !$product['is_deliverable']);
 
             $cart = $this->cart_model->get_user_cart($this->data['user']->id);
-            $cart_total = 0.0;
-            for ($i = 0; $i < count($cart); $i++) {
-                $cart_total += $cart[$i]['sub_total'];
-                $cart[$i]['delivery_by'] = $product_availability[$i]['delivery_by'];
-                $cart[$i]['is_deliverable'] = $product_availability[$i]['is_deliverable'];
+            $cart_total = array_sum(array_column($cart, 'sub_total'));
+
+            foreach ($cart as $i => $item) {
+                $cart[$i]['delivery_by'] = $product_availability[$i]['delivery_by'] ?? '';
+                $cart[$i]['is_deliverable'] = $product_availability[$i]['is_deliverable'] ?? false;
                 if ($cart[$i]['delivery_by'] == "standard_shipping") {
                     $standard_shipping_cart[] = $cart[$i];
                 } else {
@@ -1311,40 +1382,40 @@ class Cart extends CI_Controller
                 }
             }
 
-            $this->response['error'] = (empty($product_not_delivarable)) ? false : true;
-            $this->response['message'] = (empty($product_not_delivarable)) ? "All the products are deliverable on the selected address" : "Some of the item(s) are not delivarable on selected address. Try changing address or modify your cart items.";
+            $this->response['error'] = empty($product_not_delivarable) ? false : true;
+            $this->response['message'] = empty($product_not_delivarable)
+                ? "All products are deliverable"
+                : "Some items are not deliverable to selected address.";
 
             if (!empty($standard_shipping_cart)) {
-                $delivery_pincode = fetch_details('addresses', ['id' => $_POST['address_id']], 'pincode');
+                $delivery_pincode = fetch_details('addresses', ['id' => $address_id], 'pincode');
                 $parcels = make_shipping_parcels($cart);
                 $parcels_details = check_parcels_deliveriblity($parcels, $delivery_pincode[0]['pincode']);
 
                 if ($shipping_method['shiprocket_shipping_method'] == 1 && $shipping_method['standard_shipping_free_delivery'] == 1 && $cart_total > $shipping_method['minimum_free_delivery_order_amount']) {
                     $this->response['delivery_charge_with_cod'] = 0;
                     $this->response['delivery_charge_without_cod'] = 0;
-                    $this->response['estimate_date'] = $parcels_details['estimate_date'];
-                    $this->response['shipping_method'] = $shipping_method['shiprocket_shipping_method'];
                 } else {
                     $this->response['delivery_charge_with_cod'] = $parcels_details['delivery_charge_with_cod'];
                     $this->response['delivery_charge_without_cod'] = $parcels_details['delivery_charge_without_cod'];
-                    $this->response['estimate_date'] = $parcels_details['estimate_date'];
-                    $this->response['shipping_method'] = $shipping_method['shiprocket_shipping_method'];
                 }
+                $this->response['estimate_date'] = $parcels_details['estimate_date'] ?? '';
+                $this->response['shipping_method'] = $shipping_method['shiprocket_shipping_method'];
             }
+
             if (!empty($local_shipping_cart)) {
-                $delivery_charge = get_delivery_charge($_POST['address_id'], $_POST['total'], $this->data['user']->id);
+                $delivery_charge = get_delivery_charge($address_id, $this->input->post('total'), $this->data['user']->id);
                 $this->response['delivery_charge_with_cod'] = $delivery_charge;
                 $this->response['delivery_charge_without_cod'] = $delivery_charge;
             }
 
             $this->response['data'] = $cart;
-            $this->response['csrfName'] = $this->security->get_csrf_token_name();
-            $this->response['csrfHash'] = $this->security->get_csrf_hash();
             $this->response['availability_data'] = $product_availability;
-        } else {
-            $this->response['error'] = true;
-            $this->response['message'] = "Please select address.";
         }
+
+        $this->response['delivery_available'] = true;
+        $this->response['csrfName'] = $this->security->get_csrf_token_name();
+        $this->response['csrfHash'] = $this->security->get_csrf_hash();
 
         print_r(json_encode($this->response));
     }
@@ -1355,8 +1426,6 @@ class Cart extends CI_Controller
         if (!$this->data['is_logged_in']) {
             $this->response['error'] = true;
             $this->response['message'] = "Please login first.";
-            $this->response['csrfName'] = $this->security->get_csrf_token_name();
-            $this->response['csrfHash'] = $this->security->get_csrf_hash();
             print_r(json_encode($this->response));
             return;
         }
@@ -1366,8 +1435,6 @@ class Cart extends CI_Controller
         if (!$this->form_validation->run()) {
             $this->response['error'] = true;
             $this->response['message'] = validation_errors();
-            $this->response['csrfName'] = $this->security->get_csrf_token_name();
-            $this->response['csrfHash'] = $this->security->get_csrf_hash();
             print_r(json_encode($this->response));
             return;
         }
@@ -1380,8 +1447,6 @@ class Cart extends CI_Controller
         if (empty($address_data)) {
             $this->response['error'] = true;
             $this->response['message'] = "Invalid address.";
-            $this->response['csrfName'] = $this->security->get_csrf_token_name();
-            $this->response['csrfHash'] = $this->security->get_csrf_hash();
             print_r(json_encode($this->response));
             return;
         }
@@ -1395,8 +1460,6 @@ class Cart extends CI_Controller
             $this->response['error'] = true;
             $this->response['message'] = "Delivery not available for this zipcode.";
             $this->response['delivery_available'] = false;
-            $this->response['csrfName'] = $this->security->get_csrf_token_name();
-            $this->response['csrfHash'] = $this->security->get_csrf_hash();
             print_r(json_encode($this->response));
             return;
         }
@@ -1413,8 +1476,6 @@ class Cart extends CI_Controller
                 $this->response['message'] = "No shipping quotes available for this zipcode.";
                 $this->response['delivery_available'] = false;
                 $this->response['provider_type'] = 'company';
-                $this->response['csrfName'] = $this->security->get_csrf_token_name();
-                $this->response['csrfHash'] = $this->security->get_csrf_hash();
                 print_r(json_encode($this->response));
                 return;
             }

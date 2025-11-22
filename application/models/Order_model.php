@@ -676,6 +676,7 @@ class Order_model extends CI_Model
                     'affiliate_token' => isset($affiliate_data[$variant_id]['affiliate_token']) ? $affiliate_data[$variant_id]['affiliate_token'] : '',
                     'affiliate_commission' => isset($affiliate_data[$variant_id]['category_commission']) ? $affiliate_data[$variant_id]['category_commission'] : '',
                     'affiliate_commission_amount' => isset($affiliate_data[$variant_id]['affiliate_commission_amount']) ? $affiliate_data[$variant_id]['affiliate_commission_amount'] : '',
+                    'shipping_company_id' => isset($data['shipping_company_id']) && !empty($data['shipping_company_id']) ? $data['shipping_company_id'] : '',
                 ];
 
                 $this->db->insert('order_items', $product_variant_data[$i]);
@@ -1535,7 +1536,7 @@ class Order_model extends CI_Model
                 $operate = '<a href=' . base_url('delivery_boy/orders/edit_orders') . '?edit_id=' . $row['order_id'] . ' class="btn action-btn btn-primary btn-xs mr-1 mb-1 ml-1" title="View"><i class="fa fa-eye"></i></a>';
             } else if ($this->ion_auth->is_seller()) {
                 $operate = '<a href=' . base_url('seller/orders/edit_orders') . '?edit_id=' . $row['order_id'] . ' class="btn action-btn btn-primary btn-xs mr-1 ml-1 mb-1" title="View"><i class="fa fa-eye"></i></a>';
-                $operate .= '<a href="' . base_url() . 'seller/invoice?edit_id=' . $row['order_id'] . '" class="btn btn-info action-btn btn-xs ml-1 mb-1" title="Invoice" ><i class="fa fa-file"></i></a>';
+                $operate .= '<a href="' . base_url() . 'seller/invoice?edit_id=' . $row['order_id'] . '" class="btn action-btn btn-info btn-xs ml-1 mb-1" title="Invoice" ><i class="fa fa-file"></i></a>';
                 if ($row['type'] != 'digital_product') {
 
                     $operate .= ' <a href="javascript:void(0)" class="edit_order_tracking btn btn-success btn-xs action-btn ml-1  mb-1" title="Order Tracking" data-order_id="' . $row['order_id'] . '" data-order_item_id="' . $row['order_item_id'] . '" data-seller_id="' . $row['seller_id'] . '" data-courier_agency="' . $row['courier_agency'] . '"  data-tracking_id="' . $row['tracking_id'] . '" data-url="' . $row['url'] . '" data-target="#transaction_modal" data-toggle="modal"><i class="fa fa-map-marker-alt"></i></a>';
@@ -3324,6 +3325,7 @@ class Order_model extends CI_Model
             } else {
                 $operate = '<a href="' . base_url("delivery_boy/orders/edit_orders?edit_id=" . $row['id']) . '" class="btn btn-dark btn-xs mx-1 view_consignment_items"><i class="fa fa-eye"></i></a>';
             }
+
             $tempRow['order_date'] = $item_detail[0]['date_added'];
             $tempRow['created_date'] = $item_detail[0]['date_added'];
 
@@ -3352,5 +3354,387 @@ class Order_model extends CI_Model
         $query = $this->db->get();
 
         return $query->num_rows() > 0;
+    }
+
+    public function get_order_by_id($order_id)
+    {
+        // ...existing code that fetches order record into $order ...
+
+        // After existing logic, enrich order with items and consignments
+        // Fetch order (use existing fetch if present)
+        $order = [];
+        // Try to fetch using existing simple query if not already set
+        $order_res = $this->db->select('o.*')
+            ->from('orders o')
+            ->where('o.id', $order_id)
+            ->get()
+            ->result_array();
+
+        if (empty($order_res)) {
+            return [];
+        }
+
+        $order = $order_res[0];
+
+        // Fetch order items
+        $items = $this->db->select('*')
+            ->from('order_items')
+            ->where('order_id', $order_id)
+            ->get()
+            ->result_array();
+
+        // Attach items
+        $order['items'] = $items;
+
+        // Decode shipping_quote_snapshot if present
+        if (!empty($order['shipping_quote_snapshot'])) {
+            $decoded = json_decode($order['shipping_quote_snapshot'], true);
+            $order['shipping_quote_snapshot'] = $decoded;
+        }
+        if (empty($order['shipping_company_id'])) {
+
+
+            // Fetch consignments for this order
+            $consignments = $this->db->select('c.*')
+                ->from('consignment c')
+                ->where('c.order_id', $order_id)
+                ->get()
+                ->result_array();
+
+            // For each consignment, fetch its items
+            foreach ($consignments as &$cons) {
+                $cons_items = $this->db->select('ci.*, oi.product_name, oi.variant_name')
+                    ->from('consignment_items ci')
+                    ->join('order_items oi', 'oi.id = ci.order_item_id', 'left')
+                    ->where('ci.consignment_id', $cons['id'])
+                    ->get()
+                    ->result_array();
+                $cons['items'] = $cons_items;
+            }
+            $order['consignment'] = $consignments;
+        }
+
+
+
+        return [$order];
+    }
+
+    /**
+     * Create a consignment for the given order when shipping company is assigned.
+     * It associates relevant order items and records delivery charge (from quote snapshot)
+     */
+    public function create_consignment_for_order($order_id, $shipping_company_id = null, $selected_quote_id = null, $shipping_quote_snapshot = null)
+    {
+        if (empty($order_id) || empty($shipping_company_id)) {
+            return false;
+        }
+
+        // Determine delivery charge from quote snapshot if available
+        $delivery_charge = 0;
+        if (!empty($shipping_quote_snapshot) && is_string($shipping_quote_snapshot)) {
+            $snapshot = json_decode($shipping_quote_snapshot, true);
+        } elseif (is_array($shipping_quote_snapshot)) {
+            $snapshot = $shipping_quote_snapshot;
+        } else {
+            $snapshot = null;
+        }
+
+        if (!empty($snapshot) && isset($snapshot['price'])) {
+            $delivery_charge = floatval($snapshot['price']);
+        }
+
+        // Prepare consignment record
+        $consignment_data = [
+            'order_id' => $order_id,
+            'delivery_boy_id' => null,
+            'shipping_company_id' => $shipping_company_id,
+            'name' => 'Consignment for Order ' . $order_id,
+            'status' => 'pending',
+            'active_status' => 'pending',
+            'otp' => rand(100000, 999999),
+            'delivery_charge' => $delivery_charge,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+
+        $this->db->insert('consignment', $consignment_data);
+        $consignment_id = $this->db->insert_id();
+
+        if (!$consignment_id) {
+            return false;
+        }
+
+        // Attach order items to consignment
+        // Prefer items that have shipping_company_id set to this company, otherwise attach all
+        $order_items_query = $this->db->from('order_items')->where('order_id', $order_id);
+        $order_items = $order_items_query->get()->result_array();
+
+        if (!empty($order_items)) {
+            foreach ($order_items as $item) {
+                // If item has shipping_company_id and it doesn't match, skip
+                if (isset($item['shipping_company_id']) && !empty($item['shipping_company_id']) && $item['shipping_company_id'] != $shipping_company_id) {
+                    continue;
+                }
+
+                $ci = [
+                    'consignment_id' => $consignment_id,
+                    'order_item_id' => $item['id'],
+                    'product_variant_id' => isset($item['product_variant_id']) ? $item['product_variant_id'] : 0,
+                    'unit_price' => isset($item['discounted_price']) && $item['discounted_price'] > 0 ? $item['discounted_price'] : $item['price'],
+                    'quantity' => isset($item['quantity']) ? $item['quantity'] : 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+                $this->db->insert('consignment_items', $ci);
+            }
+        }
+
+        // Update order record: set shipping_company_id and selected_quote_id if not already set
+        $update = [];
+        if ($selected_quote_id && empty($this->db->select('selected_quote_id')->from('orders')->where('id', $order_id)->get()->row()->selected_quote_id)) {
+            $update['selected_quote_id'] = $selected_quote_id;
+        }
+        if (!empty($shipping_company_id) && empty($this->db->select('shipping_company_id')->from('orders')->where('id', $order_id)->get()->row()->shipping_company_id)) {
+            $update['shipping_company_id'] = $shipping_company_id;
+        }
+        if (!empty($shipping_quote_snapshot)) {
+            $update['shipping_quote_snapshot'] = is_array($shipping_quote_snapshot) ? json_encode($shipping_quote_snapshot) : $shipping_quote_snapshot;
+        }
+        if (!empty($update)) {
+            $this->db->where('id', $order_id)->update('orders', $update);
+        }
+
+        return $consignment_id;
+    }
+
+
+
+    // Add this method to your Order_model class
+
+    public function get_shipping_company_orders($shipping_company_id = NULL, $offset = 0, $limit = 10, $sort = "oi.id", $order = 'DESC')
+    {
+        if (isset($_GET['offset'])) {
+            $offset = $_GET['offset'];
+        }
+        if (isset($_GET['limit'])) {
+            $limit = $_GET['limit'];
+        }
+
+        $filters = array();
+        if (isset($_GET['search']) and $_GET['search'] != '') {
+            $search = $_GET['search'];
+            $filters = [
+                'un.username' => $search,
+                'us.username' => $search,
+                'un.email' => $search,
+                'oi.id' => $search,
+                'o.mobile' => $search,
+                'o.address' => $search,
+                'o.payment_method' => $search,
+                'oi.sub_total' => $search,
+                'o.delivery_time' => $search,
+                'oi.active_status' => $search,
+                'oi.date_added' => $search,
+                'oi.product_name' => $search
+            ];
+        }
+
+        // Count query - Filter by orders.shipping_company_id
+        $count_res = $this->db->select('COUNT(oi.id) as `total`')
+            ->from('order_items oi')
+            ->join('orders o', 'o.id = oi.order_id', 'left')
+            ->join('users us', 'us.id = oi.seller_id', 'left')
+            ->join('product_variants v', 'oi.product_variant_id = v.id', 'left')
+            ->join('products p', 'p.id = v.product_id', 'left')
+            ->join('users un', 'un.id = o.user_id', 'left');
+
+        if (!empty($_GET['start_date']) && !empty($_GET['end_date'])) {
+            $count_res->where("DATE(oi.date_added) >=", $_GET['start_date']);
+            $count_res->where("DATE(oi.date_added) <=", $_GET['end_date']);
+        }
+
+        if (!empty($filters)) {
+            $count_res->group_start();
+            $count_res->or_like($filters);
+            $count_res->group_end();
+        }
+
+        // IMPORTANT: Filter by orders.shipping_company_id instead of oi.shipping_company_id
+        if (isset($shipping_company_id) && !empty($shipping_company_id)) {
+            $count_res->where("o.shipping_company_id", $shipping_company_id);
+        }
+
+        if (isset($_GET['order_status']) && !empty($_GET['order_status'])) {
+            $count_res->where('oi.active_status', $_GET['order_status']);
+        }
+
+        if (isset($_GET['payment_method']) && !empty($_GET['payment_method'])) {
+            if ($_GET['payment_method'] == 'online-payment') {
+                $count_res->where('o.payment_method !=', 'COD');
+            } else {
+                $count_res->where('o.payment_method', $_GET['payment_method']);
+            }
+        }
+
+        if (isset($_GET['order_type']) && !empty($_GET['order_type'])) {
+            if ($_GET['order_type'] == 'physical_order') {
+                $count_res->where('p.type !=', 'digital_product');
+            } else if ($_GET['order_type'] == 'digital_order') {
+                $count_res->where('p.type', 'digital_product');
+            }
+        }
+
+        $product_count = $count_res->get()->result_array();
+        $total = isset($product_count[0]['total']) ? $product_count[0]['total'] : 0;
+
+        // Main query - Filter by orders.shipping_company_id
+        $search_res = $this->db->select('o.id as order_id, o.shipping_company_id, oi.id as order_item_id, o.user_id, o.mobile, o.address, o.payment_method, o.delivery_time, o.delivery_date, o.date_added, o.notes, oi.seller_id, oi.product_name, oi.variant_name, oi.quantity, oi.sub_total, oi.active_status, oi.status, oi.product_variant_id, oi.updated_by, ot.courier_agency, ot.tracking_id, ot.url, un.username as username, us.username as seller_name, p.type')
+            ->from('order_items oi')
+            ->join('orders o', 'o.id = oi.order_id', 'left')
+            ->join('users us', 'us.id = oi.seller_id', 'left')
+            ->join('order_tracking ot', 'ot.order_item_id = oi.id', 'left')
+            ->join('product_variants v', 'oi.product_variant_id = v.id', 'left')
+            ->join('products p', 'p.id = v.product_id', 'left')
+            ->join('users un', 'un.id = o.user_id', 'left');
+
+        if (!empty($_GET['start_date']) && !empty($_GET['end_date'])) {
+            $search_res->where("DATE(oi.date_added) >=", $_GET['start_date']);
+            $search_res->where("DATE(oi.date_added) <=", $_GET['end_date']);
+        }
+
+        if (!empty($filters)) {
+            $search_res->group_start();
+            $search_res->or_like($filters);
+            $search_res->group_end();
+        }
+
+        // IMPORTANT: Filter by orders.shipping_company_id instead of oi.shipping_company_id
+        if (isset($shipping_company_id) && !empty($shipping_company_id)) {
+            $search_res->where("o.shipping_company_id", $shipping_company_id);
+        }
+
+        if (isset($_GET['order_status']) && !empty($_GET['order_status'])) {
+            $search_res->where('oi.active_status', $_GET['order_status']);
+        }
+
+        if (isset($_GET['payment_method']) && !empty($_GET['payment_method'])) {
+            if ($_GET['payment_method'] == 'online-payment') {
+                $search_res->where('o.payment_method !=', 'COD');
+            } else {
+                $search_res->where('o.payment_method', $_GET['payment_method']);
+            }
+        }
+
+        if (isset($_GET['order_type']) && !empty($_GET['order_type'])) {
+            if ($_GET['order_type'] == 'physical_order') {
+                $search_res->where('p.type !=', 'digital_product');
+            } else if ($_GET['order_type'] == 'digital_order') {
+                $search_res->where('p.type', 'digital_product');
+            }
+        }
+
+        $user_details = $search_res->order_by($sort, $order)->limit($limit, $offset)->get()->result_array();
+
+        $bulkData = array();
+        $bulkData['total'] = $total;
+        $rows = array();
+        $tempRow = array();
+        $final_tota_amount = 0;
+        $currency_symbol = get_settings('currency');
+        $count = 1;
+
+        foreach ($user_details as $row) {
+            $temp = '';
+            if (!empty($row['status'])) {
+                $status_array = json_decode($row['status'], true);
+                if (is_array($status_array)) {
+                    foreach ($status_array as $st) {
+                        $temp .= @$st[0] . " : " . @$st[1] . "<br>------<br>";
+                    }
+                }
+            }
+
+            // Status badge
+            $active_status = '<label class="badge badge-secondary">' . $row['active_status'] . '</label>';
+
+            switch ($row['active_status']) {
+                case 'received':
+                    $active_status = '<label class="badge badge-primary">' . $row['active_status'] . '</label>';
+                    break;
+                case 'processed':
+                    $active_status = '<label class="badge badge-info">' . $row['active_status'] . '</label>';
+                    break;
+                case 'shipped':
+                    $active_status = '<label class="badge badge-warning">' . $row['active_status'] . '</label>';
+                    break;
+                case 'delivered':
+                    $active_status = '<label class="badge badge-success">' . $row['active_status'] . '</label>';
+                    break;
+            }
+
+            $tempRow['id'] = $count;
+            $tempRow['order_id'] = $row['order_id'];
+            $tempRow['order_item_id'] = $row['order_item_id'];
+            $tempRow['user_id'] = $row['user_id'];
+            $tempRow['seller_id'] = $row['seller_id'];
+            $tempRow['notes'] = (isset($row['notes']) && !empty($row['notes'])) ? $row['notes'] : "";
+            $tempRow['username'] = $row['username'];
+            $tempRow['seller_name'] = $row['seller_name'];
+            $tempRow['product_name'] = $row['product_name'];
+            $tempRow['product_name'] .= (!empty($row['variant_name'])) ? ' (' . $row['variant_name'] . ')' : "";
+
+            if (isset($row['mobile']) && !empty($row['mobile']) && $row['mobile'] != "" && $row['mobile'] != " ") {
+                $tempRow['mobile'] = (defined('ALLOW_MODIFICATION') && ALLOW_MODIFICATION == 0) ? str_repeat("X", strlen($row['mobile']) - 3) . substr($row['mobile'], -3) : $row['mobile'];
+            } else {
+                $tempRow['mobile'] = "";
+            }
+
+            $tempRow['sub_total'] = $currency_symbol . ' ' . $row['sub_total'];
+            $tempRow['quantity'] = $row['quantity'];
+            $final_tota_amount += $row['sub_total'];
+            $tempRow['payment_method'] = str_replace('_', ' ', $row['payment_method']);
+            $tempRow['product_variant_id'] = $row['product_variant_id'];
+            $tempRow['delivery_date'] = $row['delivery_date'] ?? '';
+            $tempRow['delivery_time'] = $row['delivery_time'] ?? '';
+            $tempRow['courier_agency'] = (isset($row['courier_agency']) && !empty($row['courier_agency'])) ? $row['courier_agency'] : "";
+            $tempRow['tracking_id'] = (isset($row['tracking_id']) && !empty($row['tracking_id'])) ? $row['tracking_id'] : "";
+            $tempRow['url'] = (isset($row['url']) && !empty($row['url'])) ? $row['url'] : "";
+
+            $updated_username = fetch_details('users', ['id' => $row['updated_by']], 'username');
+            $tempRow['updated_by'] = !empty($updated_username) ? $updated_username[0]['username'] : 'N/A';
+            $tempRow['status'] = $temp;
+            $tempRow['active_status'] = $active_status;
+            $tempRow['date_added'] = date('d-m-Y h:i:s', strtotime($row['date_added']));
+
+            $operate = '<a href="' . base_url('shipping_company/orders/edit_orders') . '?edit_id=' . $row['order_id'] . '" class="btn action-btn btn-primary btn-xs mr-1 mb-1 ml-1" title="View"><i class="fa fa-eye"></i></a>';
+
+            $tempRow['operate'] = $operate;
+            $rows[] = $tempRow;
+            $count++;
+        }
+
+        if (!empty($user_details)) {
+            $tempRow = array();
+            $tempRow['id'] = '-';
+            $tempRow['order_id'] = '-';
+            $tempRow['order_item_id'] = '-';
+            $tempRow['user_id'] = '-';
+            $tempRow['seller_id'] = '-';
+            $tempRow['username'] = '-';
+            $tempRow['seller_name'] = '-';
+            $tempRow['mobile'] = '-';
+            $tempRow['product_name'] = '-';
+            $tempRow['sub_total'] = '<span class="badge badge-danger">' . $currency_symbol . ' ' . $final_tota_amount . '</span>';
+            $tempRow['quantity'] = '-';
+            $tempRow['delivery_time'] = '-';
+            $tempRow['status'] = '-';
+            $tempRow['active_status'] = '-';
+            $tempRow['date_added'] = '-';
+            $tempRow['operate'] = '-';
+            array_push($rows, $tempRow);
+        }
+
+        $bulkData['rows'] = $rows;
+        print_r(json_encode($bulkData));
     }
 }
